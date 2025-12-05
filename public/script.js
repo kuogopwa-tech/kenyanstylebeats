@@ -347,7 +347,7 @@ async function loadBeats() {
         
         if (data.success) {
             allBeats = data.beats;
-            console.log(`✅ Loaded ${allBeats.length} beats`);
+            console.log(`✅ Loaded ${allBeats.length} beats/[id]`);
             console.log(`👤 User role during display: ${currentUser?.role || 'Not logged in'}`);
             
             populateSeriesSidebar(data.series);
