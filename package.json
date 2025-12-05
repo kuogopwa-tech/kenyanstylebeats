@@ -1,40 +1,12 @@
 {
-  "name": "empire-beatstore-backend",
+  "name": "kenyanstylebeats",
   "version": "1.0.0",
-  "description": "Empire Beatstore Backend API",
-  "main": "api/index.js",
+  "type": "module",
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo 'No build step required for Vercel Serverless Functions'",
-    "start": "vercel start",
-    "deploy": "vercel --prod",
-    "deploy-preview": "vercel",
-    "logs": "vercel logs",
-    "local": "nodemon server-local.js"
+    "deploy": "vercel --prod"
   },
-  "keywords": [
-    "music",
-    "beatstore",
-    "api",
-    "authentication"
-  ],
-  "author": "TMK Media Services",
-  "license": "ISC",
   "dependencies": {
-    "@vercel/node": "^3.0.0",
-    "bcryptjs": "^2.4.3",
-    "dotenv": "^16.3.1",
-    "express-validator": "^7.0.1",
-    "formidable": "^3.0.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.0",
-    "uuid": "^9.0.0"
-  },
-  "devDependencies": {
-    "vercel": "^33.0.0",
-    "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": ">=18.x"
+    "@vercel/node": "^3.0.0"
   }
 }
