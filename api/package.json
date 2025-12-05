@@ -4,7 +4,7 @@
   "description": "Empire Beatstore Backend API",
   "main": "api/server.js",
   "scripts": {
-    "start": "node api/server.js",
+    
     "dev": "nodemon api/server.js",
     "setup": "npm install"
   },
