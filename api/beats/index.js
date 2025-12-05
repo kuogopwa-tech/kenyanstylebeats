@@ -8,9 +8,11 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 // Models
-import User from '../../models/User';
-import Beat from '../../models/Beat';
-import Purchase from '../../models/Purchase';
+import User from '../models/User.js';
+import Beat from '../models/Beat.js';
+import Purchase from '../models/Purchase.js';
+import gridfsUpload from '../middleware/gridfsUpload.js';
+import auth from '../middleware/auth.js';
 
 // Middleware
 import gridfsUpload from '../../middleware/gridfsUpload';
