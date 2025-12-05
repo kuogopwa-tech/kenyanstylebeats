@@ -1,29 +1,42 @@
-const multer = require('multer');
-const mongoose = require('mongoose');
-const crypto = require('crypto');
-const path = require('path');
+import mongoose from 'mongoose';
+import { GridFSBucket } from 'mongodb';
+import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
 
-// Multer configuration to use temporary disk storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, '/tmp/uploads'); // Temporary directory
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+// Serverless-friendly upload handling (no persistent storage)
+class GridFSUploadServerless {
+  constructor() {
+    this.bucket = null;
   }
-});
 
-// Enhanced file filter
-const fileFilter = (req, file, cb) => {
-  try {
-    const fileType = req.body.fileType;
-    
-    if (!fileType) {
-      return cb(new Error('File type is required. Specify "Audio" or "Style"'), false);
+  getBucket() {
+    if (!this.bucket && mongoose.connection.db) {
+      this.bucket = new GridFSBucket(mongoose.connection.db, {
+        bucketName: 'uploads',
+        chunkSizeBytes: 255 * 1024,
+      });
     }
-    
-    const extname = path.extname(file.originalname).toLowerCase();
+    return this.bucket;
+  }
+
+  checkDbConnection() {
+    if (mongoose.connection.readyState !== 1) {
+      throw new Error(`Database not connected. State: ${mongoose.connection.readyState}`);
+    }
+  }
+
+  // Helper to create temp file path
+  getTempFilePath(filename) {
+    const tempDir = os.tmpdir();
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    return path.join(tempDir, `${filename}-${uniqueSuffix}${path.extname(filename)}`);
+  }
+
+  // File filter for serverless
+  fileFilter(fileType, originalname) {
+    const extname = path.extname(originalname).toLowerCase();
     const fileTypeLower = fileType.toLowerCase();
     
     const audioExtensions = {
@@ -37,304 +50,376 @@ const fileFilter = (req, file, cb) => {
     
     if (fileTypeLower === 'audio') {
       if (audioExtensions[extname]) {
-        cb(null, true);
-      } else {
-        cb(new Error(`Unsupported audio format. Allowed: ${Object.keys(audioExtensions).join(', ')}`), false);
+        return {
+          valid: true,
+          mimeType: audioExtensions[extname]
+        };
       }
+      return {
+        valid: false,
+        error: `Unsupported audio format. Allowed: ${Object.keys(audioExtensions).join(', ')}`
+      };
     } else if (fileTypeLower === 'style') {
       if (extname === '.sty') {
-        cb(null, true);
-      } else {
-        cb(new Error('Only .STY files are allowed for Style type'), false);
+        return { valid: true, mimeType: 'application/octet-stream' };
       }
-    } else {
-      cb(new Error('Invalid file type. Must be "Audio" or "Style"'), false);
+      return { valid: false, error: 'Only .STY files are allowed for Style type' };
     }
-  } catch (error) {
-    cb(error, false);
+    
+    return { valid: false, error: 'Invalid file type. Must be "Audio" or "Style"' };
   }
-};
 
-// Create multer instance
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB
-    files: 1
-  }
-});
-
-// Check database connection
-const checkDbConnection = () => {
-  if (mongoose.connection.readyState !== 1) {
-    throw new Error('Database not connected. State: ' + mongoose.connection.readyState);
-  }
-};
-
-// Upload to GridFS using streams
-const uploadToGridFS = async (filePath, originalFilename, metadata = {}) => {
-  return new Promise((resolve, reject) => {
-    try {
-      checkDbConnection();
-      
-      const db = mongoose.connection.db;
-      const bucket = new mongoose.mongo.GridFSBucket(db, {
-        bucketName: 'uploads',
-        chunkSizeBytes: 255 * 1024, // 255KB chunks
-      });
-
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomString = crypto.randomBytes(8).toString('hex');
-      const safeOriginalName = originalFilename.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const filename = `${timestamp}_${randomString}_${safeOriginalName}`;
-      
-      console.log('Starting GridFS upload:', {
-        originalName: originalFilename,
-        filename: filename,
-        filePath: filePath
-      });
-
-      // Prepare metadata
-      const fullMetadata = {
-        originalName: originalFilename,
-        uploadDate: new Date(),
-        ...metadata
-      };
-
-      // Create upload stream
-      const uploadStream = bucket.openUploadStream(filename, {
-        metadata: fullMetadata
-      });
-
-      // Create read stream from file
-      const fs = require('fs');
-      const readStream = fs.createReadStream(filePath);
-
-      let uploadedBytes = 0;
-      const stats = fs.statSync(filePath);
-      const totalBytes = stats.size;
-
-      // Track progress
-      readStream.on('data', (chunk) => {
-        uploadedBytes += chunk.length;
-        const percentage = Math.round((uploadedBytes / totalBytes) * 100);
-        if (percentage % 10 === 0) {
-          console.log(`Upload progress: ${percentage}%`);
-        }
-      });
-
-      // Handle upload completion
-      uploadStream.on('finish', () => {
-        console.log('✅ GridFS upload completed:', {
-          fileId: uploadStream.id,
-          filename: filename,
-          size: totalBytes
-        });
+  // Upload to GridFS from buffer (serverless-friendly)
+  async uploadToGridFS(buffer, originalFilename, metadata = {}) {
+    return new Promise((resolve, reject) => {
+      try {
+        this.checkDbConnection();
         
-        // Clean up temp file
-        fs.unlinkSync(filePath);
+        const bucket = this.getBucket();
         
-        resolve({
-          fileId: uploadStream.id,
-          filename: filename,
+        // Generate unique filename
+        const timestamp = Date.now();
+        const randomString = crypto.randomBytes(8).toString('hex');
+        const safeOriginalName = originalFilename.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filename = `${timestamp}_${randomString}_${safeOriginalName}`;
+        
+        console.log('Starting GridFS upload:', {
           originalName: originalFilename,
-          size: totalBytes,
+          filename: filename,
+          size: buffer.length
+        });
+
+        // Prepare metadata
+        const fullMetadata = {
+          originalName: originalFilename,
           uploadDate: new Date(),
+          mimeType: metadata.mimeType || 'application/octet-stream',
+          ...metadata
+        };
+
+        // Create upload stream
+        const uploadStream = bucket.openUploadStream(filename, {
           metadata: fullMetadata
         });
-      });
 
-      // Handle errors
-      uploadStream.on('error', (error) => {
-        console.error('GridFS upload error:', error);
-        fs.unlinkSync(filePath); // Clean up temp file
-        reject(new Error(`Upload failed: ${error.message}`));
-      });
-
-      readStream.on('error', (error) => {
-        console.error('File read error:', error);
-        uploadStream.destroy();
-        reject(error);
-      });
-
-      // Pipe the file to GridFS
-      readStream.pipe(uploadStream);
-
-    } catch (error) {
-      console.error('GridFS upload setup error:', error);
-      reject(error);
-    }
-  });
-};
-
-// Download from GridFS
-const downloadFromGridFS = async (fileId, res) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      checkDbConnection();
-      
-      const db = mongoose.connection.db;
-      const bucket = new mongoose.mongo.GridFSBucket(db, {
-        bucketName: 'uploads'
-      });
-
-      // Convert to ObjectId
-      const objectId = mongoose.Types.ObjectId.isValid(fileId) 
-        ? new mongoose.Types.ObjectId(fileId) 
-        : fileId;
-
-      // Find file
-      const files = await bucket.find({ _id: objectId }).toArray();
-      if (files.length === 0) {
-        return reject(new Error('File not found'));
-      }
-
-      const file = files[0];
-      const fileSize = file.length;
-      
-      // Set headers
-      res.set({
-        'Content-Type': file.metadata?.mimeType || 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${file.metadata?.originalName || file.filename}"`,
-        'Content-Length': fileSize
-      });
-
-      // Create download stream
-      const downloadStream = bucket.openDownloadStream(objectId);
-      
-      // Pipe to response
-      downloadStream.pipe(res);
-      
-      // Handle stream events
-      downloadStream.on('end', () => {
-        console.log('Download completed:', fileId);
-        resolve();
-      });
-      
-      downloadStream.on('error', (error) => {
-        console.error('Download stream error:', error);
-        reject(error);
-      });
-
-    } catch (error) {
-      console.error('GridFS download error:', error);
-      reject(error);
-    }
-  });
-};
-
-// Stream audio with range support
-const streamAudioFromGridFS = async (fileId, req, res) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      checkDbConnection();
-      
-      const db = mongoose.connection.db;
-      const bucket = new mongoose.mongo.GridFSBucket(db, {
-        bucketName: 'uploads'
-      });
-
-      // Convert to ObjectId
-      const objectId = mongoose.Types.ObjectId.isValid(fileId) 
-        ? new mongoose.Types.ObjectId(fileId) 
-        : fileId;
-
-      // Find file
-      const files = await bucket.find({ _id: objectId }).toArray();
-      if (files.length === 0) {
-        return reject(new Error('File not found'));
-      }
-
-      const file = files[0];
-      const fileSize = file.length;
-      const range = req.headers.range;
-
-      if (range) {
-        // Parse range
-        const parts = range.replace(/bytes=/, "").split("-");
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-        const chunksize = (end - start) + 1;
+        // Track progress
+        let uploadedBytes = 0;
+        const totalBytes = buffer.length;
         
-        // Set partial content headers
-        res.writeHead(206, {
-          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-          'Accept-Ranges': 'bytes',
-          'Content-Length': chunksize,
-          'Content-Type': file.metadata?.mimeType || 'audio/mpeg'
+        // Write buffer in chunks to track progress
+        const chunkSize = 1024 * 1024; // 1MB chunks
+        let position = 0;
+        
+        const writeNextChunk = () => {
+          if (position >= totalBytes) {
+            uploadStream.end();
+            return;
+          }
+          
+          const chunk = buffer.slice(position, Math.min(position + chunkSize, totalBytes));
+          position += chunk.length;
+          uploadedBytes += chunk.length;
+          
+          const percentage = Math.round((uploadedBytes / totalBytes) * 100);
+          if (percentage % 10 === 0) {
+            console.log(`Upload progress: ${percentage}%`);
+          }
+          
+          if (!uploadStream.write(chunk)) {
+            uploadStream.once('drain', writeNextChunk);
+          } else {
+            setImmediate(writeNextChunk);
+          }
+        };
+
+        // Handle upload completion
+        uploadStream.on('finish', () => {
+          console.log('✅ GridFS upload completed:', {
+            fileId: uploadStream.id,
+            filename: filename,
+            size: totalBytes
+          });
+          
+          resolve({
+            fileId: uploadStream.id,
+            filename: filename,
+            originalName: originalFilename,
+            size: totalBytes,
+            uploadDate: new Date(),
+            metadata: fullMetadata
+          });
         });
-        
-        // Create stream with range
-        const downloadStream = bucket.openDownloadStream(objectId, { start, end: end + 1 });
-        downloadStream.pipe(res);
-      } else {
-        // Full file
-        res.writeHead(200, {
-          'Content-Length': fileSize,
-          'Content-Type': file.metadata?.mimeType || 'audio/mpeg'
+
+        // Handle errors
+        uploadStream.on('error', (error) => {
+          console.error('GridFS upload error:', error);
+          reject(new Error(`Upload failed: ${error.message}`));
         });
+
+        // Start uploading
+        writeNextChunk();
+
+      } catch (error) {
+        console.error('GridFS upload setup error:', error);
+        reject(error);
+      }
+    });
+  }
+
+  // Download from GridFS
+  async downloadFromGridFS(fileId, res, asAttachment = true) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.checkDbConnection();
         
+        const bucket = this.getBucket();
+        const objectId = this.createObjectId(fileId);
+
+        // Find file
+        const cursor = bucket.find({ _id: objectId });
+        const files = await cursor.toArray();
+        
+        if (files.length === 0) {
+          return reject(new Error('File not found'));
+        }
+
+        const file = files[0];
+        const fileSize = file.length;
+        
+        // Set headers
+        res.setHeader('Content-Type', file.metadata?.mimeType || 'application/octet-stream');
+        
+        if (asAttachment) {
+          res.setHeader('Content-Disposition', `attachment; filename="${file.metadata?.originalName || file.filename}"`);
+        } else {
+          res.setHeader('Content-Disposition', `inline; filename="${file.metadata?.originalName || file.filename}"`);
+        }
+        
+        res.setHeader('Content-Length', fileSize);
+
+        // Create download stream
         const downloadStream = bucket.openDownloadStream(objectId);
+        
+        // Pipe to response
         downloadStream.pipe(res);
+        
+        // Handle stream events
+        downloadStream.on('end', () => {
+          console.log('Download completed:', fileId);
+          resolve();
+        });
+        
+        downloadStream.on('error', (error) => {
+          console.error('Download stream error:', error);
+          reject(error);
+        });
+
+      } catch (error) {
+        console.error('GridFS download error:', error);
+        reject(error);
       }
+    });
+  }
 
-      res.on('finish', () => resolve());
-      res.on('error', (error) => reject(error));
+  // Stream audio with range support
+  async streamAudioFromGridFS(fileId, req, res) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.checkDbConnection();
+        
+        const bucket = this.getBucket();
+        const objectId = this.createObjectId(fileId);
 
+        // Find file
+        const cursor = bucket.find({ _id: objectId });
+        const files = await cursor.toArray();
+        
+        if (files.length === 0) {
+          return reject(new Error('File not found'));
+        }
+
+        const file = files[0];
+        const fileSize = file.length;
+        const range = req.headers.range;
+
+        if (range) {
+          // Parse range
+          const parts = range.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+          const chunksize = (end - start) + 1;
+          
+          // Set partial content headers
+          res.writeHead(206, {
+            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': chunksize,
+            'Content-Type': file.metadata?.mimeType || 'audio/mpeg'
+          });
+          
+          // Create stream with range
+          const downloadStream = bucket.openDownloadStream(objectId, { start, end: end + 1 });
+          downloadStream.pipe(res);
+        } else {
+          // Full file
+          res.writeHead(200, {
+            'Content-Length': fileSize,
+            'Content-Type': file.metadata?.mimeType || 'audio/mpeg'
+          });
+          
+          const downloadStream = bucket.openDownloadStream(objectId);
+          downloadStream.pipe(res);
+        }
+
+        res.on('finish', () => resolve());
+        res.on('error', (error) => reject(error));
+
+      } catch (error) {
+        console.error('Stream audio error:', error);
+        reject(error);
+      }
+    });
+  }
+
+  // Get file info
+  async getFileInfo(fileId) {
+    try {
+      this.checkDbConnection();
+      
+      const bucket = this.getBucket();
+      const objectId = this.createObjectId(fileId);
+      
+      const cursor = bucket.find({ _id: objectId });
+      const files = await cursor.toArray();
+      return files[0] || null;
     } catch (error) {
-      console.error('Stream audio error:', error);
-      reject(error);
+      console.error('Get file info error:', error);
+      throw error;
     }
-  });
-};
-
-// Get file info
-const getFileInfo = async (fileId) => {
-  try {
-    checkDbConnection();
-    
-    const db = mongoose.connection.db;
-    const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'uploads' });
-    
-    const objectId = mongoose.Types.ObjectId.isValid(fileId) 
-      ? new mongoose.Types.ObjectId(fileId) 
-      : fileId;
-      
-    const files = await bucket.find({ _id: objectId }).toArray();
-    return files[0] || null;
-  } catch (error) {
-    console.error('Get file info error:', error);
-    throw error;
   }
-};
 
-// Delete from GridFS
-const deleteFromGridFS = async (fileId) => {
-  try {
-    checkDbConnection();
-    
-    const db = mongoose.connection.db;
-    const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'uploads' });
-    
-    const objectId = mongoose.Types.ObjectId.isValid(fileId) 
-      ? new mongoose.Types.ObjectId(fileId) 
-      : fileId;
+  // Delete from GridFS
+  async deleteFromGridFS(fileId) {
+    try {
+      this.checkDbConnection();
       
-    await bucket.delete(objectId);
-    return true;
-  } catch (error) {
-    console.error('Delete from GridFS error:', error);
-    throw error;
+      const bucket = this.getBucket();
+      const objectId = this.createObjectId(fileId);
+      
+      await bucket.delete(objectId);
+      return true;
+    } catch (error) {
+      console.error('Delete from GridFS error:', error);
+      throw error;
+    }
   }
-};
 
-// Error handler
-const handleUploadError = (err, req, res, next) => {
-  console.error('Upload error:', err);
-  
-  if (err instanceof multer.MulterError) {
+  // Helper to create ObjectId
+  createObjectId(fileId) {
+    if (mongoose.Types.ObjectId.isValid(fileId)) {
+      return new mongoose.Types.ObjectId(fileId);
+    }
+    throw new Error('Invalid file ID format');
+  }
+
+  // Handle multipart uploads for serverless
+  async handleMultipartUpload(req, fieldName = 'file') {
+    return new Promise((resolve, reject) => {
+      // For serverless, we need to handle the raw body
+      const chunks = [];
+      
+      req.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+      
+      req.on('end', async () => {
+        try {
+          const buffer = Buffer.concat(chunks);
+          
+          // Parse multipart data (simplified - you might want to use a library)
+          const contentType = req.headers['content-type'];
+          if (!contentType || !contentType.includes('multipart/form-data')) {
+            throw new Error('Content-Type must be multipart/form-data');
+          }
+          
+          const boundary = contentType.split('boundary=')[1];
+          const parts = this.parseMultipart(buffer, boundary);
+          
+          // Find the file part
+          const filePart = parts.find(part => 
+            part.headers['content-disposition'].includes(`name="${fieldName}"`)
+          );
+          
+          if (!filePart) {
+            throw new Error(`No file found with field name: ${fieldName}`);
+          }
+          
+          resolve({
+            buffer: filePart.data,
+            filename: this.extractFilename(filePart.headers['content-disposition']),
+            contentType: filePart.headers['content-type'] || 'application/octet-stream'
+          });
+          
+        } catch (error) {
+          reject(error);
+        }
+      });
+      
+      req.on('error', reject);
+    });
+  }
+
+  // Simple multipart parser
+  parseMultipart(buffer, boundary) {
+    const parts = [];
+    const boundaryBuffer = Buffer.from(`--${boundary}`);
+    const endBoundaryBuffer = Buffer.from(`--${boundary}--`);
+    
+    let position = 0;
+    
+    while (position < buffer.length) {
+      // Find boundary
+      const boundaryIndex = buffer.indexOf(boundaryBuffer, position);
+      if (boundaryIndex === -1) break;
+      
+      // Find next boundary
+      const nextBoundaryIndex = buffer.indexOf(boundaryBuffer, boundaryIndex + boundaryBuffer.length);
+      if (nextBoundaryIndex === -1) break;
+      
+      const partBuffer = buffer.slice(boundaryIndex + boundaryBuffer.length, nextBoundaryIndex);
+      
+      // Parse headers
+      const headerEndIndex = partBuffer.indexOf('\r\n\r\n');
+      const headersText = partBuffer.slice(0, headerEndIndex).toString();
+      const data = partBuffer.slice(headerEndIndex + 4);
+      
+      const headers = {};
+      headersText.split('\r\n').forEach(line => {
+        const colonIndex = line.indexOf(':');
+        if (colonIndex > -1) {
+          const key = line.slice(0, colonIndex).trim().toLowerCase();
+          const value = line.slice(colonIndex + 1).trim();
+          headers[key] = value;
+        }
+      });
+      
+      parts.push({ headers, data });
+      position = nextBoundaryIndex;
+    }
+    
+    return parts;
+  }
+
+  extractFilename(contentDisposition) {
+    const match = contentDisposition.match(/filename="([^"]+)"/) || 
+                  contentDisposition.match(/filename=([^;]+)/);
+    return match ? match[1].trim() : 'unknown';
+  }
+
+  // Error handler for serverless
+  handleUploadError(err) {
+    console.error('Upload error:', err);
+    
     const errors = {
       LIMIT_FILE_SIZE: 'File size too large. Maximum size is 50MB',
       LIMIT_UNEXPECTED_FILE: 'Unexpected file field',
@@ -344,29 +429,19 @@ const handleUploadError = (err, req, res, next) => {
       LIMIT_PART_COUNT: 'Too many parts'
     };
     
-    return res.status(400).json({
-      success: false,
-      message: errors[err.code] || 'File upload error',
-      code: err.code
-    });
-  }
-  
-  if (err) {
-    return res.status(400).json({
+    if (errors[err.code]) {
+      return {
+        success: false,
+        message: errors[err.code],
+        code: err.code
+      };
+    }
+    
+    return {
       success: false,
       message: err.message || 'File upload error'
-    });
+    };
   }
-  
-  next();
-};
+}
 
-module.exports = {
-  uploadMiddleware: upload.single('file'),
-  uploadToGridFS,
-  downloadFromGridFS,
-  streamAudioFromGridFS,
-  deleteFromGridFS,
-  getFileInfo,
-  handleUploadError
-};
+export default new GridFSUploadServerless();
