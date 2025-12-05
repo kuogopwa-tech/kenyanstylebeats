@@ -327,51 +327,162 @@ function refreshBeatCards() {
 // Load beats from API
 // Load beats from API
 async function loadBeats() {
-    console.log('📡 Loading beats from API...');
+    console.log('📡 Loading beats from Vercel API...');
     console.log(`👤 Current user role before loading: ${currentUser?.role || 'Not logged in'}`);
+    console.log(`🌐 API URL: ${API_BASE_URL}/beats`);
     
     try {
         const beatsGrid = document.getElementById('beatsGrid');
         if (beatsGrid) {
-            beatsGrid.innerHTML = '<div style="color:white;padding:20px;text-align:center">Loading beats...</div>';
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/beats`);
-        console.log('API Response status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            allBeats = data.beats;
-            console.log(`✅ Loaded ${allBeats.length} beats/[id]`);
-            console.log(`👤 User role during display: ${currentUser?.role || 'Not logged in'}`);
-            
-            populateSeriesSidebar(data.series);
-            displayBeats(allBeats);
-            updateExploreDropdown(data.series);
-        } else {
-            console.error('API returned error:', data.message);
-            showToast('Failed to load beats', 'error');
-            displayNoBeatsMessage();
-        }
-    } catch (error) {
-        console.error('Error loading beats:', error);
-        
-        const beatsGrid = document.getElementById('beatsGrid');
-        if (beatsGrid) {
             beatsGrid.innerHTML = `
-                <div style="color:#dc3545;padding:20px;text-align:center">
-                    <p>Error loading beats: ${error.message}</p>
-                    <p>Make sure the backend server is running at ${API_BASE_URL}</p>
+                <div style="color:white;padding:40px;text-align:center">
+                    <div style="display:inline-block;width:40px;height:40px;border:3px solid rgba(255,255,255,0.3);border-top-color:var(--accent1);border-radius:50%;animation:spin 1s linear infinite;"></div>
+                    <p style="margin-top:15px;color:var(--text-muted);">Loading beats from server...</p>
                 </div>
             `;
         }
         
-        showToast('Network error loading beats', 'error');
+        // Add spinner animation CSS
+        if (!document.querySelector('#spinner-css')) {
+            const spinnerCSS = document.createElement('style');
+            spinnerCSS.id = 'spinner-css';
+            spinnerCSS.textContent = `
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(spinnerCSS);
+        }
+        
+        // Make the API request
+        const response = await fetch(`${API_BASE_URL}/beats`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        
+        console.log('📥 API Response status:', response.status);
+        console.log('📥 API Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        // Handle different response scenarios
+        if (response.status === 404) {
+            throw new Error('API endpoint not found. Make sure Vercel deployment is complete.');
+        }
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ API error response:', errorText);
+            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📊 API Response data:', data);
+        
+        // Handle different response formats
+        if (data.success) {
+            // Vercel format: data.data or data.beats
+            allBeats = data.data || data.beats || [];
+            
+            console.log(`✅ Loaded ${allBeats.length} beats from Vercel`);
+            console.log(`👤 User role during display: ${currentUser?.role || 'Not logged in'}`);
+            
+            // Extract series from beats
+            const seriesSet = new Set();
+            allBeats.forEach(beat => {
+                if (beat.series) seriesSet.add(beat.series);
+            });
+            const seriesList = Array.from(seriesSet);
+            
+            populateSeriesSidebar(seriesList);
+            displayBeats(allBeats);
+            updateExploreDropdown(seriesList);
+            
+            // Update stats if available
+            if (data.count !== undefined) {
+                console.log(`📈 Total beats in database: ${data.count}`);
+            }
+            
+            showToast(`Loaded ${allBeats.length} beats`, 'success');
+            
+        } else if (Array.isArray(data)) {
+            // If API returns array directly (some APIs do this)
+            allBeats = data;
+            console.log(`✅ Loaded ${allBeats.length} beats (array format)`);
+            
+            const seriesSet = new Set();
+            allBeats.forEach(beat => {
+                if (beat.series) seriesSet.add(beat.series);
+            });
+            const seriesList = Array.from(seriesSet);
+            
+            populateSeriesSidebar(seriesList);
+            displayBeats(allBeats);
+            updateExploreDropdown(seriesList);
+            
+        } else {
+            console.error('❌ API returned error:', data.message || data.error);
+            showToast('Failed to load beats: ' + (data.message || 'Unknown error'), 'error');
+            displayNoBeatsMessage();
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading beats:', error);
+        
+        const beatsGrid = document.getElementById('beatsGrid');
+        if (beatsGrid) {
+            beatsGrid.innerHTML = `
+                <div style="color:var(--danger);padding:30px;text-align:center;background:var(--card-bg);border-radius:10px;border:1px solid var(--danger-light);max-width:500px;margin:20px auto;">
+                    <div style="font-size:48px;margin-bottom:15px;">⚠️</div>
+                    <h3 style="margin-bottom:10px;color:var(--text);">Connection Error</h3>
+                    <p style="color:var(--muted);margin-bottom:20px;line-height:1.5;">
+                        ${error.message}
+                    </p>
+                    <div style="background:var(--bg-secondary);padding:15px;border-radius:8px;margin-bottom:20px;text-align:left;">
+                        <strong style="display:block;margin-bottom:5px;">Troubleshooting:</strong>
+                        <ul style="margin:0;padding-left:20px;color:var(--muted);font-size:14px;">
+                            <li>Make sure backend is deployed to Vercel</li>
+                            <li>Check if API endpoint exists: <code style="background:var(--bg-dark);padding:2px 5px;border-radius:3px;">${API_BASE_URL}/beats</code></li>
+                            <li>Refresh the page and try again</li>
+                        </ul>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:center;">
+                        <button onclick="loadBeats()" 
+                                style="padding:10px 20px;background:var(--accent1);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:500;">
+                            🔄 Retry
+                        </button>
+                        <button onclick="testApiConnection()" 
+                                style="padding:10px 20px;background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;">
+                            🛠️ Test Connection
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// Add a connection test function
+async function testApiConnection() {
+    try {
+        showToast('Testing API connection...', 'info');
+        
+        const response = await fetch(`${API_BASE_URL}/health`);
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(`✅ API is online: ${data.message}`, 'success');
+            return true;
+        } else {
+            showToast('❌ API is offline', 'error');
+            return false;
+        }
+    } catch (error) {
+        showToast(`❌ Cannot reach API: ${error.message}`, 'error');
+        return false;
     }
 }
 // Populate series sidebar
