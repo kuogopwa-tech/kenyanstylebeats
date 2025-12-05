@@ -1,24 +1,26 @@
 @echo off
-echo ===============================
-echo   KENYAN STYLE BEATS DEPLOY
-echo ===============================
-echo.
+setlocal
 
-:: Go to your project folder
-cd /d "C:\Users\TMK MEDIA SERVICES\beatsstore"
+REM --- Navigate to project folder ---
+cd /d "%~dp0"
 
-echo Adding files...
+REM --- Stage all changes ---
 git add .
 
-echo Creating commit...
-git commit -m "auto deploy"
+REM --- Auto-generate commit message ---
+for /f "tokens=1-4 delims=/ " %%a in ('date /t') do set today=%%a-%%b-%%c
+for /f "tokens=1-2 delims=: " %%x in ('time /t') do set now=%%x-%%y
+set msg=Auto commit %today%_%now%
 
-echo Pushing to GitHub...
-git push
+REM --- Commit changes ---
+git commit -m "%msg%"
+
+REM --- Push to GitHub ---
+git push origin main
+
+REM --- Open Vercel dashboard ---
+start https://vercel.com/kuogopwa-tech/kenyanstylebeats
 
 echo.
-echo ===============================
-echo   DEPLOY COMPLETE!
-echo   Check Vercel dashboard 🙂
-echo ===============================
+echo ✅ Auto-deploy complete! Commit message: %msg%
 pause
