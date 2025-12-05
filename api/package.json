@@ -2,7 +2,7 @@
   "name": "empire-beatstore-backend",
   "version": "1.0.0",
   "description": "Empire Beatstore Backend API",
-  "main": "server.js",
+  "main": "api/server.js",
   "scripts": {
     "start": "node api/server.js",
     "dev": "nodemon api/server.js",
