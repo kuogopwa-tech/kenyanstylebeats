@@ -160,3 +160,5 @@ tmp/
 
 # User-specific files
 *.user
+.vercel
+.env*.local
