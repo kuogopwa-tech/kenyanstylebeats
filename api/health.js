@@ -1,11 +1,21 @@
-// api/health.js - ES Module format
-export default function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.status(200).json({
-    status: 'OK',
-    message: 'API is working!',
-    timestamp: new Date().toISOString()
-  });
+// api/health.js - Edge Function
+export const config = {
+  runtime: 'edge',
+};
+
+export default function handler(req) {
+  return new Response(
+    JSON.stringify({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      path: '/api/health'
+    }),
+    {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    }
+  );
 }
