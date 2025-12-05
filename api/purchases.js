@@ -1,10 +1,10 @@
 // routes/purchases.js
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
-const Beat = require('../models/Beat');
-const Purchase = require('../models/Purchase');
-const User = require('../models/User');
+const auth = require('./middleware/auth');
+const Beat = require('./models/Beat');
+const Purchase = require('./models/Purchase');
+const User = require('./models/User');
 
 // ============================================
 // ADMIN: Generate purchase key for a beat
