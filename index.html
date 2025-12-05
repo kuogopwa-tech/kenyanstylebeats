@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EMPIRE MUSIC & BEATS STORE</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">EM</div>
+      <div>
+        <div class="title">EMPIRE MUSIC & BEATS STORE</div>
+        <div style="font-size:12px;color:var(--muted)">Red 3D piano · Styles & Previews</div>
+      </div>
+    </div>
+
+    <nav style="display:flex;gap:12px;align-items:center">
+      <button id="browseTop" class="btn secondary">Browse Beats</button>
+      <button id="adminPanelBtn" class="btn secondary" style="display:none;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+      <line x1="3" y1="9" x2="21" y2="9"></line>
+      <line x1="9" y1="21" x2="9" y2="9"></line>
+    </svg>
+    Admin Panel
+  </button>
+      <button id="adminBtn" class="btn secondary">Upload</button>
+      <button id="signBtn" class="btn secondary">Sign In</button>
+      <!-- User profile dropdown (hidden by default) -->
+      <div id="userDropdown" style="display:none;position:relative">
+        <button id="userMenu" class="btn secondary" style="display:flex;align-items:center;gap:6px">
+          <span id="userInitial">U</span> ▼
+        </button>
+        <div id="userDropdownMenu" class="dropdown" style="display:none;position:absolute;right:0;top:100%;margin-top:8px;min-width:180px">
+          <div class="dropdown-header">Signed in as</div>
+          <div class="dropdown-item" id="userEmail" style="color:var(--accent1);font-weight:600"></div>
+          <hr class="dropdown-divider">
+          <button class="dropdown-item" data-action="profile">My Profile</button>
+          <button class="dropdown-item" data-action="changePassword">Change Password</button>
+          <hr class="dropdown-divider" style="display:none" id="adminDivider">
+          <button class="dropdown-item" data-action="adminUsers" style="display:none" id="adminUsersBtn">Manage Users</button>
+          <hr class="dropdown-divider">
+          <button class="dropdown-item" data-action="logout" style="color:#dc3545">Sign Out</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="main-container">
+    <!-- Hero Section -->
+    <section class="hero-card">
+      <div class="hero-content">
+        <div style="position:relative">
+          <div style="position:absolute;left:0;top:-8px;background:linear-gradient(90deg,var(--accent1), rgba(138,43,226,0.6));padding:6px 10px;border-radius:999px;font-weight:700;color:#fff;font-size:12px">NEW</div>
+          <h1 style="margin-top:18px">High-quality Yamaha Styles · Instant Previews</h1>
+        </div>
+        <p class="lead">EMPIRE brings your performances to life. Listen to previews of our Yamaha .sty beats, then purchase the original style file for your keyboard.</p>
+        <div class="cta">
+          <button id="exploreBtn" class="btn">Explore Beats</button>
+          <div id="exploreDropdown" class="dropdown" style="display:none">
+            <button class="dropdown-item" data-series="all">All Beats</button>
+            <button class="dropdown-item" data-series="PSR E-Series">PSR E-Series</button>
+            <button class="dropdown-item" data-series="PSR SX-Series">PSR SX-Series</button>
+            <button class="dropdown-item" data-series="PSR S‑Series">PSR S‑Series</button>
+            <button class="dropdown-item" data-series="PSR‑A5000">PSR‑A5000</button>
+            <button class="dropdown-item" data-series="Other">Other</button>
+          </div>
+          <button id="howBtn" class="btn secondary">How it works</button>
+        </div>
+      </div>
+
+      <div class="piano-wrap" aria-hidden="true">
+        <svg viewBox="0 0 1400 420" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#7a1414"/><stop offset="1" stop-color="#2b0b0b"/></linearGradient>
+          </defs>
+          <rect x="18" y="120" rx="28" ry="28" width="1364" height="180" fill="url(#g1)"/>
+        </svg>
+      </div>
+      <div class="piano-shadow" aria-hidden="true"></div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="content-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar" id="seriesSidebar">
+        <h3>Series</h3>
+        <ul class="series-list" id="seriesList">
+          <!-- Dynamic content -->
+        </ul>
+      </aside>
+
+      <!-- Beats Section -->
+      <section class="beats-section">
+        <div class="beats-header">
+          <h2>Beats</h2>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="searchBeats" class="search-box" placeholder="Search beats...">
+            <button id="refreshBeats" class="btn secondary" style="padding:8px 12px">⟳</button>
+          </div>
+        </div>
+        
+        <div id="noBeatsMessage" class="no-beats" style="display:none">
+          <h3>No beats found</h3>
+          <p>Try a different search or browse all beats.</p>
+        </div>
+        
+        <div class="beats-grid" id="beatsGrid">
+          <!-- Dynamic content -->
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      © <span id="year"></span> EMPIRE MUSIC & BEATS STORE · Styles are sold as .sty files for Yamaha keyboards.
+    </footer>
+  </div>
+
+  <!-- Beat Template -->
+  <template id="beatTemplate">
+    <div class="beat-card">
+      <div class="beat-thumb">
+        <div style="flex:1">BEAT NAME</div>
+        <div class="bpm-badge">120 BPM</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="beat-meta">
+          <div class="beat-name">Beat Title</div>
+          <div class="price">KES 9.99</div>
+        </div>
+        <div class="beat-actions">
+          <button class="play-btn" data-action="play">▶ Play</button>
+          <button class="btn secondary" data-action="preview">Preview</button>
+          <button class="btn" data-action="buy">Buy</button>
+          <button class="btn secondary delete-btn" data-action="delete" style="display:none">Delete</button>
+        </div>
+        <canvas class="vis-canvas" data-visualizer></canvas>
+        <audio preload="metadata" data-audio></audio>
+      </div>
+    </div>
+  </template>
+
+  <!-- Authentication Modal -->
+  <div id="authModal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card small" role="document">
+        <button class="modal-close" data-close>✕</button>
+        
+        <!-- Auth Tabs - ADD RESET TAB -->
+        <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Sign In</button>
+            <button class="auth-tab" data-tab="register">Register</button>
+            <button class="auth-tab" data-tab="forgot">Forgot Password</button>
+            <button class="auth-tab" data-tab="reset" style="display:none">Set New Password</button>
+        </div>
+
+      <!-- Login Form -->
+      <div id="loginForm" class="auth-form active">
+        <div class="form-group">
+          <input id="loginEmail" type="email" placeholder="Email" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <input id="loginPassword" type="password" placeholder="Password" class="form-control" required />
+        </div>
+        <div class="form-group" style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <input type="checkbox" id="rememberMe" />
+            <label for="rememberMe" style="font-size:14px">Remember me</label>
+          </div>
+          <button class="btn-link" data-switch-to="forgot">Forgot password?</button>
+        </div>
+        <div class="form-group">
+          <button id="loginBtn" class="btn" style="width:100%">Sign In</button>
+        </div>
+        <div id="loginStatus" class="status-message"></div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="registerForm" class="auth-form">
+        <div class="form-group">
+          <input id="registerName" type="text" placeholder="Full Name" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <input id="registerEmail" type="email" placeholder="Email" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <input id="registerPassword" type="password" placeholder="Password (min 8 characters)" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <input id="registerConfirmPassword" type="password" placeholder="Confirm Password" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <button id="registerBtn" class="btn" style="width:100%">Create Account</button>
+        </div>
+        <div id="registerStatus" class="status-message"></div>
+      </div>
+
+      <!-- Forgot Password Form -->
+      <div id="forgotForm" class="auth-form">
+        <div class="form-group">
+          <input id="forgotEmail" type="email" placeholder="Enter your email" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <button id="forgotBtn" class="btn" style="width:100%">Send Reset Token</button>
+        </div>
+        <div id="forgotStatus" class="status-message"></div>
+        <div id="tokenInfo" style="display:none;margin-top:16px;padding:12px;background:var(--card-bg);border-radius:6px">
+          <p style="margin:0 0 8px;font-weight:500">Reset Token Generated:</p>
+          <div style="display:flex;gap:8px;align-items:center">
+            <code id="resetTokenDisplay" style="flex:1;padding:6px;background:#2b2b2b;border-radius:4px;font-size:12px;word-break:break-all"></code>
+            <button id="copyTokenBtn" class="btn secondary" style="padding:6px 10px">Copy</button>
+          </div>
+          <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">Use this token to reset your password</p>
+        </div>
+      </div>
+
+      <!-- Reset Password Form -->
+      <div id="resetForm" class="auth-form">
+        <div class="form-group">
+          <input id="resetToken" type="text" placeholder="Reset Token" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <input id="resetNewPassword" type="password" placeholder="New Password (min 8 characters)" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <input id="resetConfirmPassword" type="password" placeholder="Confirm New Password" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <button id="resetBtn" class="btn" style="width:100%">Reset Password</button>
+        </div>
+        <div id="resetStatus" class="status-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Profile Modal -->
+  <div id="profileModal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card small">
+      <button class="modal-close" data-close>✕</button>
+      <h3 style="margin:0 0 16px">My Profile</h3>
+      <div class="modal-content">
+        <div class="form-group">
+          <label>Profile Picture URL</label>
+          <input id="profilePicture" type="text" class="form-control" placeholder="https://example.com/photo.jpg" />
+        </div>
+        <div class="form-group">
+          <label>Name</label>
+          <input id="profileName" type="text" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label>Bio</label>
+          <textarea id="profileBio" class="form-control" rows="3" placeholder="Tell us about yourself..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="profileEmail" type="email" class="form-control" readonly />
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <input id="profileRole" type="text" class="form-control" readonly />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+          <button id="saveProfileBtn" class="btn">Save Changes</button>
+          <button class="btn secondary" data-close>Cancel</button>
+        </div>
+        <div id="profileStatus" class="status-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="changePasswordModal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card small">
+      <button class="modal-close" data-close>✕</button>
+      <h3 style="margin:0 0 16px">Change Password</h3>
+      <div class="modal-content">
+        <div class="form-group">
+          <label>Current Password</label>
+          <input id="currentPassword" type="password" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input id="newPassword" type="password" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input id="confirmNewPassword" type="password" class="form-control" required />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+          <button id="savePasswordBtn" class="btn">Change Password</button>
+          <button class="btn secondary" data-close>Cancel</button>
+        </div>
+        <div id="passwordStatus" class="status-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Users Modal (Admin Only) -->
+  <div id="adminUsersModal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card">
+      <button class="modal-close" data-close>✕</button>
+      <h3 style="margin:0 0 16px">Manage Users</h3>
+      <div class="modal-content">
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <input type="text" id="searchUsers" class="form-control" placeholder="Search users..." />
+          <select id="userRoleFilter" class="form-control" style="width:120px">
+            <option value="">All Roles</option>
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+            <option value="artist">Artist</option>
+          </select>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <!-- Users will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+          <div id="usersPagination" style="display:flex;gap:4px">
+            <!-- Pagination will be loaded here -->
+          </div>
+          <div style="color:var(--muted);font-size:14px">
+            Showing <span id="usersCount">0</span> users
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Upload Modal (Updated for Authentication) -->
+  <div id="adminModal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card">
+      <button class="modal-close" data-close>✕</button>
+      
+      <!-- Admin Login View (shown when not authenticated) -->
+      <div id="adminLoginView">
+        <h3 style="margin:0 0 16px">Admin Upload — Sign In</h3>
+        <div class="form-group">
+          <input id="adminEmail" type="email" placeholder="Admin Email" class="form-control" />
+        </div>
+        <div class="form-group">
+          <input id="adminPassword" type="password" placeholder="Password" class="form-control" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button id="adminLoginBtn" class="btn">Sign In</button>
+          <button class="btn secondary" data-close>Cancel</button>
+        </div>
+        <div id="adminLoginStatus" class="status-message"></div>
+      </div>
+
+      <!-- Admin Uploader (shown when authenticated as admin) -->
+      <div id="adminUploader" style="display:none">
+  <h3 style="margin:0 0 24px;font-size:1.5rem;font-weight:700;color:var(--text-primary)">Upload Beat</h3>
+  <form id="uploadForm">
+    
+    <!-- Form Row with Beautiful Selects -->
+    <div class="form-row" style="display:flex;gap:20px;margin-bottom:24px">
+      
+      <!-- File Type Select - Enhanced -->
+      <div class="form-group" style="flex:1">
+        <label for="fileType" style="display:block;margin-bottom:8px;color:var(--text-primary);font-weight:600;font-size:0.9rem">
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            File Type
+          </span>
+        </label>
+        <div class="select-wrapper">
+          <select id="fileType" class="form-control select-enhanced" required>
+            <option value="" disabled selected>Select file type</option>
+            <option value="Audio" data-icon="🎵">Audio Preview</option>
+            <option value="Style" data-icon="🎹">Style File (.sty)</option>
+          </select>
+          <div class="select-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="select-hint">Choose between audio preview or style file</div>
+      </div>
+      
+      <!-- Beat Series Select - Enhanced -->
+      <div class="form-group" style="flex:1">
+        <label for="beatSeries" style="display:block;margin-bottom:8px;color:var(--text-primary);font-weight:600;font-size:0.9rem">
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="9" y1="21" y2="9"></line>
+            </svg>
+            Keyboard Series
+          </span>
+        </label>
+        <div class="select-wrapper">
+          <select id="beatSeries" class="form-control select-enhanced" required>
+            <option value="" disabled selected>Select series</option>
+            <option value="PSR E-Series" data-icon="🎹">PSR E-Series</option>
+            <option value="PSR SX-Series" data-icon="🎹">PSR SX-Series</option>
+            <option value="PSR S‑Series" data-icon="🎹">PSR S‑Series</option>
+            <option value="PSR‑A5000" data-icon="🎹">PSR‑A5000</option>
+            <option value="Other" data-icon="🎹">Other</option>
+          </select>
+          <div class="select-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="select-hint">Choose the compatible Yamaha series</div>
+      </div>
+      
+    </div>
+    
+    <!-- Price Input - Enhanced -->
+    <div class="form-group" style="margin-bottom:24px">
+      <label for="beatPrice" style="display:block;margin-bottom:8px;color:var(--text-primary);font-weight:600;font-size:0.9rem">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          Price (KES)
+        </span>
+      </label>
+      <div class="input-with-icon">
+        <span class="input-icon">KES</span>
+        <input id="beatPrice" 
+               type="number" 
+               step="0.01" 
+               min="0" 
+               class="form-control input-enhanced" 
+               placeholder="0.00" 
+               required 
+               style="padding-left:60px" />
+      </div>
+      <div class="input-hint">Enter price in Kenyan Shillings</div>
+    </div>
+
+    <!-- Add this field after the price field in your upload form -->
+<div class="form-group">
+    <label for="beatGenre">Genre (Optional)</label>
+    <input type="text" id="beatGenre" class="form-control" placeholder="e.g., Trap, Hip Hop, R&B">
+    <small class="form-text text-muted">Enter the music genre (optional)</small>
+</div>
+    
+    <!-- File Upload - Enhanced -->
+    <div class="form-group" style="margin-bottom:32px">
+      <label for="beatFile" style="display:block;margin-bottom:8px;color:var(--text-primary);font-weight:600;font-size:0.9rem">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          File Upload
+        </span>
+      </label>
+      
+      <div class="file-upload-wrapper">
+        <input id="beatFile" 
+               type="file" 
+               class="file-upload-input" 
+               accept="audio/*,.sty" 
+               required />
+        <label for="beatFile" class="file-upload-label">
+          <div class="file-upload-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <div class="file-upload-text">
+            <span class="file-upload-title">Choose a file</span>
+            <span class="file-upload-subtitle">or drag & drop here</span>
+            <span class="file-upload-types">Audio files (.mp3, .wav) or Style files (.sty)</span>
+          </div>
+        </label>
+        <div class="file-preview" id="filePreview"></div>
+      </div>
+      
+      <div class="input-hint">Max file size: 10MB. Supported: MP3, WAV, STY</div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;padding-top:24px;border-top:1px solid var(--border)">
+  <button type="button" id="resetFormBtn" class="btn secondary" style="padding:12px 20px">
+    <span style="display:flex;align-items:center;gap:6px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+        <path d="M3 3v5h5"></path>
+      </svg>
+      Reset Form
+    </span>
+  </button>
+  <button id="adminLogoutBtn" type="button" class="btn secondary" style="padding:12px 20px">
+    <span style="display:flex;align-items:center;gap:6px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      Logout
+    </span>
+  </button>
+  <button type="submit" class="btn" style="padding:12px 24px;min-width:180px">
+    <span style="display:flex;align-items:center;gap:8px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1 2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      Upload & Publish
+    </span>
+  </button>
+</div>
+  </form>
+  <div id="uploadStatus" class="status-message"></div>
+</div>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div id="previewModal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card">
+      <button class="modal-close" data-close>✕</button>
+      <h3 id="previewTitle" style="margin:0 0 16px">Preview</h3>
+      <div class="modal-content">
+        <audio id="previewAudio" controls style="width:100%;margin-bottom:16px"></audio>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span id="previewMeta" style="color:var(--muted)">120 BPM • KES 9.99</span>
+          <div style="display:flex;gap:8px">
+            <button id="previewDownload" class="btn secondary" style="display:none">Download .sty</button>
+            <button id="previewBuy" class="btn">Buy Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <!-- Checkout Modal -->
+<div class="modal-backdrop" id="checkoutModal" aria-hidden="true">
+    <div class="modal-content" style="max-width:500px;">
+        <div class="modal-header">
+            <h3 id="checkoutTitle">Purchase Beat</h3>
+            <button class="modal-close" data-close>&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="checkoutBody">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+        <div class="modal-footer" id="checkoutFooter">
+            <!-- Dynamic buttons will be inserted here -->
+        </div>
+    </div>
+</div>
+
+  <!-- How It Works Modal -->
+  <div id="howModal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card">
+      <button class="modal-close" data-close>✕</button>
+      <h3 style="margin:0 0 16px">How it works</h3>
+      <div class="modal-content">
+        <div style="color:var(--muted);line-height:1.6">
+          <p><strong>1. Browse Beats</strong> – Explore our collection of Yamaha keyboard styles organized by series.</p>
+          <p><strong>2. Preview Audio</strong> – Listen to audio previews before purchasing.</p>
+          <p><strong>3. Purchase & Download</strong> – Buy the .sty file for use on your Yamaha keyboard.</p>
+          <p><strong>4. User Accounts</strong> – Register to track purchases, save favorites, and manage your profile.</p>
+          <p><strong>5. Admin Upload</strong> – Authenticated admins can upload new beats.</p>
+          <p><em>Note: This demo connects to a real backend API for authentication and user management.</em></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-backdrop" id="adminPanelModal" aria-hidden="true">
+    <div class="modal-content" style="max-width:900px;max-height:85vh;width:95vw;">
+        <div class="modal-header">
+            <h3>🎛️ Admin Panel - Purchase Keys</h3>
+            <button class="modal-close" data-close>&times;</button>
+        </div>
+        <div class="modal-body" style="padding:0;">
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="generate">Generate Key</button>
+                <button class="admin-tab" data-tab="keys">View Keys</button>
+                <button class="admin-tab" data-tab="users">Users</button>
+                <button class="admin-tab" data-tab="stats">Stats</button>
+            </div>
+            
+            <div class="admin-tab-content">
+                <!-- Generate Key Tab -->
+                <div id="generateTab" class="admin-tab-pane active">
+                    <div class="admin-form-section">
+                        <h4>Generate Purchase Key</h4>
+                        <div class="form-group">
+                            <label>Select Beat:</label>
+                            <select id="adminBeatSelect" class="form-control">
+                                <option value="">-- Select a beat --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Select User:</label>
+                            <select id="adminUserSelect" class="form-control">
+                                <option value="">-- Select a user --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Or Enter User Email:</label>
+                            <input type="email" id="adminUserEmail" class="form-control" 
+                                   placeholder="user@example.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Expiration Hours:</label>
+                            <input type="number" id="expirationHours" class="form-control" 
+                                   value="24" min="1" max="168">
+                            <small style="color:var(--muted);">Key will expire after this many hours</small>
+                        </div>
+                        
+                        <div class="form-actions" style="margin-top:20px;">
+                            <button class="btn" onclick="generatePurchaseKeyAdmin()" style="width:100%;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;">
+                                    <path d="M12 5v14M5 12h14"/>
+                                </svg>
+                                Generate Purchase Key
+                            </button>
+                        </div>
+                        
+                        <div id="keyResult" style="margin-top:20px;"></div>
+                    </div>
+                </div>
+                
+                <!-- View Keys Tab -->
+                <div id="keysTab" class="admin-tab-pane">
+                    <div class="admin-tools">
+                        <input type="text" id="searchKeys" class="form-control" placeholder="Search keys..." 
+                               style="flex:1;" oninput="filterKeys()">
+                        <select id="keyStatusFilter" class="form-control" onchange="filterKeys()" style="width:150px;">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="used">Used</option>
+                            <option value="expired">Expired</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <button class="btn secondary" onclick="refreshKeys()" style="white-space:nowrap;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 4v6h-6M1 20v-6h6"/>
+                                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                    
+                    <div id="keysList" class="admin-list" style="max-height:400px;overflow-y:auto;">
+                        <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+                            Loading purchase keys...
+                        </div>
+                    </div>
+                    
+                    <div class="pagination" id="keysPagination" style="margin-top:20px;"></div>
+                </div>
+                
+                <!-- Users Tab -->
+                <div id="usersTab" class="admin-tab-pane">
+                    <div class="admin-tools">
+                        <input type="text" id="searchUsers" class="form-control" placeholder="Search users..." 
+                               style="flex:1;" oninput="filterUsers()">
+                        <select id="userRoleFilter" class="form-control" onchange="filterUsers()" style="width:150px;">
+                            <option value="">All Roles</option>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    
+                    <div id="usersList" class="admin-list" style="max-height:400px;overflow-y:auto;">
+                        <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+                            Loading users...
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stats Tab -->
+                <div id="statsTab" class="admin-tab-pane">
+                    <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:15px;margin-bottom:30px;">
+                        <div class="stat-card" style="background:var(--card-bg);padding:20px;border-radius:8px;text-align:center;border:1px solid var(--border);">
+                            <div class="stat-value" id="totalKeys" style="font-size:32px;font-weight:bold;color:var(--accent1);margin-bottom:5px;">0</div>
+                            <div class="stat-label" style="font-size:14px;color:var(--muted);">Total Keys</div>
+                        </div>
+                        <div class="stat-card" style="background:var(--card-bg);padding:20px;border-radius:8px;text-align:center;border:1px solid var(--border);">
+                            <div class="stat-value" id="pendingKeys" style="font-size:32px;font-weight:bold;color:#ffc107;margin-bottom:5px;">0</div>
+                            <div class="stat-label" style="font-size:14px;color:var(--muted);">Pending</div>
+                        </div>
+                        <div class="stat-card" style="background:var(--card-bg);padding:20px;border-radius:8px;text-align:center;border:1px solid var(--border);">
+                            <div class="stat-value" id="usedKeys" style="font-size:32px;font-weight:bold;color:#28a745;margin-bottom:5px;">0</div>
+                            <div class="stat-label" style="font-size:14px;color:var(--muted);">Used</div>
+                        </div>
+                        <div class="stat-card" style="background:var(--card-bg);padding:20px;border-radius:8px;text-align:center;border:1px solid var(--border);">
+                            <div class="stat-value" id="expiredKeys" style="font-size:32px;font-weight:bold;color:#dc3545;margin-bottom:5px;">0</div>
+                            <div class="stat-label" style="font-size:14px;color:var(--muted);">Expired</div>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-activity" style="background:var(--card-bg);padding:20px;border-radius:8px;">
+                        <h4 style="margin:0 0 15px 0;">Recent Purchases</h4>
+                        <div id="recentPurchases">
+                            Loading recent purchases...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+  <!-- Success/Error Toast -->
+  <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-content"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
