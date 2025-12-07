@@ -322,7 +322,6 @@ nav {
    RESPONSIVE BREAKPOINTS
 ------------------------------------------------------ */
 
-/* Tablet & below */
 @media (max-width: 1050px) {
   nav { display: none; }
   .menu-toggle { display: flex; }
@@ -349,16 +348,24 @@ nav {
   .brand-text { max-width: 130px; }
 
   .title {
-    font-size: 0.78rem;
+    /* Remove the title on small screens */
+    display: none;
   }
 
-  .mobile-nav { width: 100%; } /* full-screen mobile nav */
+  .mobile-nav { 
+    width: 100%; /* full-screen mobile nav */
+  }
 }
 
 /* Extra-small devices (320–360px) */
 @media (max-width: 360px) {
   .brand-text { max-width: 100px; }
-  .title { font-size: 0.7rem; }
+  
+  /* Already hidden at 480px, but ensure it stays hidden */
+  .title { 
+    display: none;
+  }
+  
   .brand-subtitle { display: none; }
 }
 
