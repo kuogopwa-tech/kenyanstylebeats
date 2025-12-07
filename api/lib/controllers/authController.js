@@ -1,4 +1,4 @@
-import User from '../_models/User.js';
+import User from '../models/User.js';
 import { generateToken } from '../utils/generateToken.js';
 import { validationResult } from 'express-validator';
 import crypto from 'crypto';
