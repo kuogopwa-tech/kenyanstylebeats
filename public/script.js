@@ -12,6 +12,76 @@ let allBeats = [];
 let currentSeries = 'all';
 let searchQuery = '';
 
+
+// Mobile menu functionality
+const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+const mobileNavOverlay = document.getElementById('mobileNavOverlay');
+const mobileNav = document.getElementById('mobileNav');
+const mobileNavClose = document.getElementById('mobileNavClose');
+
+// Toggle mobile menu
+mobileMenuToggle?.addEventListener('click', () => {
+  mobileNav.classList.add('active');
+  mobileNavOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden'; // Prevent scrolling
+});
+
+// Close mobile menu
+function closeMobileMenu() {
+  mobileNav.classList.remove('active');
+  mobileNavOverlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+mobileNavClose?.addEventListener('click', closeMobileMenu);
+mobileNavOverlay?.addEventListener('click', closeMobileMenu);
+
+// Close mobile menu on escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && mobileNav.classList.contains('active')) {
+    closeMobileMenu();
+  }
+});
+
+// Sync desktop and mobile user states
+function syncUserStateToMobile(isLoggedIn, userData) {
+  const userDropdownMobile = document.getElementById('userDropdownMobile');
+  const userInitialMobile = document.getElementById('userInitialMobile');
+  const userEmailMobile = document.getElementById('userEmailMobile');
+  const signBtnMobile = document.getElementById('signBtnMobile');
+  
+  if (isLoggedIn && userData) {
+    userDropdownMobile.style.display = 'block';
+    signBtnMobile.style.display = 'none';
+    userInitialMobile.textContent = userData.name?.charAt(0).toUpperCase() || 'U';
+    userEmailMobile.textContent = userData.email || '';
+  } else {
+    userDropdownMobile.style.display = 'none';
+    signBtnMobile.style.display = 'flex';
+  }
+}
+
+// Mobile button event listeners
+document.getElementById('browseTopMobile')?.addEventListener('click', () => {
+  closeMobileMenu();
+  document.getElementById('browseTop')?.click();
+});
+
+document.getElementById('adminBtnMobile')?.addEventListener('click', () => {
+  closeMobileMenu();
+  document.getElementById('adminBtn')?.click();
+});
+
+document.getElementById('signBtnMobile')?.addEventListener('click', () => {
+  closeMobileMenu();
+  document.getElementById('signBtn')?.click();
+});
+
+// Close mobile menu when clicking on dropdown items
+document.querySelectorAll('.mobile-nav .dropdown-item').forEach(item => {
+  item.addEventListener('click', closeMobileMenu);
+});
+
 // ============================================
 // INITIALIZATION
 // ============================================
@@ -40,6 +110,7 @@ async function checkAuthStatus() {
     if (!authToken) {
         console.log('🔐 No auth token found');
         updateUIForLoggedOutUser();
+        syncUserStateToMobile(false, null); // ✅ ADD THIS
         return;
     }
     
@@ -60,6 +131,9 @@ async function checkAuthStatus() {
                 
                 updateUIForLoggedInUser();
                 
+                // ✅ ADD THIS: Sync mobile UI
+                syncUserStateToMobile(true, data.user);
+                
                 // Refresh beats after successful auth check
                 if (document.getElementById('beatsGrid')) {
                     refreshBeatCards();
@@ -73,6 +147,9 @@ async function checkAuthStatus() {
             currentUser = null;
             updateUIForLoggedOutUser();
             
+            // ✅ ADD THIS: Sync mobile UI
+            syncUserStateToMobile(false, null);
+            
             // Refresh beats to remove delete buttons
             if (document.getElementById('beatsGrid')) {
                 refreshBeatCards();
@@ -84,6 +161,9 @@ async function checkAuthStatus() {
         authToken = null;
         currentUser = null;
         updateUIForLoggedOutUser();
+        
+        // ✅ ADD THIS: Sync mobile UI
+        syncUserStateToMobile(false, null);
         
         if (document.getElementById('beatsGrid')) {
             refreshBeatCards();
@@ -99,7 +179,7 @@ function updateUIForLoggedInUser() {
     const adminUsersBtn = document.getElementById('adminUsersBtn');
     const adminDivider = document.getElementById('adminDivider');
     const adminBtn = document.getElementById('adminBtn');
-    const adminPanelBtn = document.getElementById('adminPanelBtn'); // Add this
+    const adminPanelBtn = document.getElementById('adminPanelBtn');
     
     if (!signBtn || !userDropdown || !userInitial || !userEmail) return;
     
@@ -116,7 +196,7 @@ function updateUIForLoggedInUser() {
             if (adminUsersBtn) adminUsersBtn.style.display = 'block';
             if (adminDivider) adminDivider.style.display = 'block';
             if (adminBtn) adminBtn.style.display = 'inline-block';
-            if (adminPanelBtn) { // Show admin panel button
+            if (adminPanelBtn) {
                 adminPanelBtn.style.display = 'inline-flex';
                 adminPanelBtn.style.alignItems = 'center';
                 adminPanelBtn.style.gap = '6px';
@@ -126,12 +206,15 @@ function updateUIForLoggedInUser() {
             if (adminUsersBtn) adminUsersBtn.style.display = 'none';
             if (adminDivider) adminDivider.style.display = 'none';
             if (adminBtn) adminBtn.style.display = 'none';
-            if (adminPanelBtn) adminPanelBtn.style.display = 'none'; // Hide admin panel button
+            if (adminPanelBtn) adminPanelBtn.style.display = 'none';
         }
         
         // Update UI visibility
         signBtn.style.display = 'none';
         userDropdown.style.display = 'block';
+        
+        // ✅ ADD THIS: Sync mobile UI
+        syncUserStateToMobile(true, currentUser);
         
         // Force refresh beats to update delete buttons
         setTimeout(() => {
@@ -142,17 +225,19 @@ function updateUIForLoggedInUser() {
     }
 }
 
-// Also update updateUIForLoggedOutUser
 function updateUIForLoggedOutUser() {
     const signBtn = document.getElementById('signBtn');
     const userDropdown = document.getElementById('userDropdown');
     const adminBtn = document.getElementById('adminBtn');
-    const adminPanelBtn = document.getElementById('adminPanelBtn'); // Add this
+    const adminPanelBtn = document.getElementById('adminPanelBtn');
     
     if (signBtn) signBtn.style.display = 'block';
     if (userDropdown) userDropdown.style.display = 'none';
     if (adminBtn) adminBtn.style.display = 'none';
-    if (adminPanelBtn) adminPanelBtn.style.display = 'none'; // Hide admin panel button
+    if (adminPanelBtn) adminPanelBtn.style.display = 'none';
+    
+    // ✅ ADD THIS: Sync mobile UI
+    syncUserStateToMobile(false, null);
 }
 
 // Add modal close listener for admin panel
@@ -2329,6 +2414,9 @@ async function adminLogin() {
             
             updateUIForLoggedInUser();
             
+            // ✅ ADD THIS: Sync mobile UI
+            syncUserStateToMobile(true, data.user);
+            
             document.getElementById('adminLoginView').style.display = 'none';
             document.getElementById('adminUploader').style.display = 'block';
             
@@ -2350,7 +2438,6 @@ async function adminLogin() {
         adminLoginBtn.disabled = false;
     }
 }
-
 function adminLogout() {
     const modal = document.getElementById('adminModal');
     if (modal) {
@@ -2587,6 +2674,9 @@ async function loginUser() {
             
             // Update UI with new admin status
             updateUIForLoggedInUser();
+            
+            // ✅ ADD THIS: Sync mobile UI
+            syncUserStateToMobile(true, data.user);
             
             // CRITICAL: Reload beats to show/hide delete buttons based on new role
             await loadBeats();
@@ -2945,6 +3035,9 @@ async function logout() {
         currentUser = null;
         
         updateUIForLoggedOutUser();
+        
+        // ✅ ADD THIS: Sync mobile UI
+        syncUserStateToMobile(false, null);
         
         // Refresh beats to remove delete buttons
         refreshBeatCards();
