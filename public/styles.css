@@ -341,6 +341,7 @@ nav {
   .title { 
     display: none;
   }
+  .brand-subtitle { display: none; }
   .title-sm {
     display: none;
   }
@@ -357,7 +358,9 @@ nav {
   .title-sm {
     display: none;
   }
-
+  .title-sm {
+    display: none;
+  }
   .mobile-nav { 
     width: 100%; /* full-screen mobile nav */
   }
