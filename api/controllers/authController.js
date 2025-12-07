@@ -1,8 +1,8 @@
-import User from '../models/User.js';
-import { generateToken } from '../utils/generateToken.js';
-import { validationResult } from 'express-validator';
-import crypto from 'crypto';
-import emailService from '../utils/emailService.js';
+const User = require('../models/User');
+const { generateToken, generateRefreshToken } = require('../utils/generateToken');
+const { validationResult } = require('express-validator');
+const crypto = require('crypto');
+const emailService = require('../utils/emailService');
 
 
 /**
@@ -618,7 +618,7 @@ const getResetTokenStatus = async (req, res) => {
     }
 };
 
-export {
+module.exports = {
   register,
   login,
   getProfile,

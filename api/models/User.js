@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-import validator from 'validator';
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const validator = require('validator');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -178,4 +178,5 @@ userSchema.virtual('updatedAtFormatted').get(function() {
 });
 
 const User = mongoose.model('User', userSchema);
-export default User;
+
+module.exports = User;

@@ -3,7 +3,7 @@
 // ============================================
 
 // Configuration
-const API_BASE_URL = `https://kenyanstylebeats.vercel.app/api`; // FIXED: Changed from /api/auth to /api
+const API_BASE_URL = `http://localhost:5000/api`; // FIXED: Changed from /api/auth to /api
 let currentUser = null;
 let authToken = localStorage.getItem('token');
 

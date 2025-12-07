@@ -1,5 +1,4 @@
-import jwt from 'jsonwebtoken';
-
+const jwt = require('jsonwebtoken');
 
 /**
  * Generate JWT token
@@ -51,7 +50,7 @@ const generateRefreshToken = (userId) => {
   );
 };
 
-export {
+module.exports = {
   generateToken,
   verifyToken,
   generateRefreshToken
