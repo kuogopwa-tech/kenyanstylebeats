@@ -338,8 +338,11 @@ nav {
     height: clamp(26px, 6vw, 32px);
   }
 
-  .brand-subtitle {
-    font-size: clamp(0.55rem, 1.4vw, 0.7rem);
+  .title { 
+    display: none;
+  }
+  .title-sm {
+    display: none;
   }
 }
 
@@ -349,6 +352,9 @@ nav {
 
   .title {
     /* Remove the title on small screens */
+    display: none;
+  }
+  .title-sm {
     display: none;
   }
 
@@ -363,6 +369,9 @@ nav {
   
   /* Already hidden at 480px, but ensure it stays hidden */
   .title { 
+    display: none;
+  }
+  .title-sm {
     display: none;
   }
   
