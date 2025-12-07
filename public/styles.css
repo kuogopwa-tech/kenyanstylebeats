@@ -380,20 +380,7 @@ header.scrolled + .main-container {
   padding-top: calc(70px + 2rem);
 }
 
-/* Fix for very small screens */
-@media (max-width: 360px) {
-  .brand-text {
-    max-width: 120px;
-  }
-  
-  .title {
-    font-size: 0.75rem;
-  }
-  
-  .brand-subtitle {
-    font-size: 0.5rem;
-  }
-}
+
 
 @keyframes headerSlideDown {
   from {
