@@ -1,6 +1,6 @@
 // api/auth/register.js
-import connectDB from '../lib/db';
-import User from '../_models/User';
+import connectDB from '../../lib/db';  // Changed from '../lib/db' to '../../lib/db'
+import User from '../../models/User';  // Changed from '../_models/User' to '../../models/User'
 import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
