@@ -341,9 +341,9 @@ nav {
   .title { 
     display: none;
   }
-  .brand-subtitle { display: none; }
+  .brand-subtitle { display: none !important; }
   .title-sm {
-    display: none;
+    display: none !important;
   }
 }
 
@@ -356,10 +356,10 @@ nav {
     display: none;
   }
   .title-sm {
-    display: none;
+    display: none !important;
   }
   .title-sm {
-    display: none;
+    display: none !important;
   }
   .mobile-nav { 
     width: 100%; /* full-screen mobile nav */
@@ -372,13 +372,13 @@ nav {
   
   /* Already hidden at 480px, but ensure it stays hidden */
   .title { 
-    display: none;
+    display: none !important;
   }
   .title-sm {
-    display: none;
+    display: none !important;
   }
   
-  .brand-subtitle { display: none; }
+  .brand-subtitle { display: none !important; }
 }
 
 
