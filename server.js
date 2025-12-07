@@ -5,8 +5,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const authRoutes = require('./routes/authRoutes');
-const connectDB = require('./config/database');
+const authRoutes = require('./api/routes/authRoutes');
+const connectDB = require('./api/config/database');
 
 const app = express();
 
@@ -63,9 +63,9 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
-const beatRoutes = require('./routes/beats');
+const beatRoutes = require('./api/routes/beats');
 app.use('/api/beats', beatRoutes);
-const purchaseRoutes = require('./routes/purchases');
+const purchaseRoutes = require('./api/routes/purchases');
 
 // Then register the routes:
 app.use('/api/purchases', purchaseRoutes);
