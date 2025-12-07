@@ -52,16 +52,13 @@ const userSchema = new mongoose.Schema({
   },
   emailVerificationToken: String,
   emailVerificationExpires: Date,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
   resetPasswordToken: String,
-    resetPasswordExpire: Date,
-    lastResetAttempt: Date,
-    resetPasswordAttempts: {
-        type: Number,
-        default: 0
-    },
-    
+  resetPasswordExpire: Date,
+  lastResetAttempt: Date,
+  resetPasswordAttempts: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -76,21 +73,16 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Index for better query performance
-userSchema.index({ email: 1 });
+// Indexes - REMOVED email:1 index since it's already created by unique:true
 userSchema.index({ role: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Password hashing middleware
 userSchema.pre('save', async function(next) {
-  // Only hash the password if it's modified (or new)
   if (!this.isModified('password')) return next();
   
   try {
-    // Generate salt
     const salt = await bcrypt.genSalt(12);
-    
-    // Hash password
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
@@ -113,43 +105,33 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   }
 };
 
-// Check if user is admin
+// Role check methods
 userSchema.methods.isAdmin = function() {
   return this.role === 'admin';
 };
 
-// Check if user is artist
 userSchema.methods.isArtist = function() {
   return this.role === 'artist';
 };
 
-// Remove sensitive information when converting to JSON
+// Remove sensitive information
 userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.password;
   delete user.emailVerificationToken;
   delete user.emailVerificationExpires;
-  delete user.passwordResetToken;
-  delete user.passwordResetExpires;
+  delete user.resetPasswordToken;
+  delete user.resetPasswordExpire;
   delete user.__v;
   return user;
 };
 
 // Virtual for formatted createdAt
-// Virtual for formatted createdAt - WITH NULL CHECK
 userSchema.virtual('createdAtFormatted').get(function() {
-  // Add null/undefined check
-  if (!this.createdAt) {
-    return '';
-  }
+  if (!this.createdAt) return '';
   
-  // Ensure it's a Date object
   const date = this.createdAt instanceof Date ? this.createdAt : new Date(this.createdAt);
-  
-  // Check if valid date
-  if (isNaN(date.getTime())) {
-    return '';
-  }
+  if (isNaN(date.getTime())) return '';
   
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -158,17 +140,12 @@ userSchema.virtual('createdAtFormatted').get(function() {
   });
 });
 
-// Also add a virtual for updatedAt if you need it
+// Virtual for formatted updatedAt
 userSchema.virtual('updatedAtFormatted').get(function() {
-  if (!this.updatedAt) {
-    return '';
-  }
+  if (!this.updatedAt) return '';
   
   const date = this.updatedAt instanceof Date ? this.updatedAt : new Date(this.updatedAt);
-  
-  if (isNaN(date.getTime())) {
-    return '';
-  }
+  if (isNaN(date.getTime())) return '';
   
   return date.toLocaleDateString('en-US', {
     year: 'numeric',

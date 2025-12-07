@@ -18,8 +18,7 @@ git commit -m "%msg%"
 REM --- Push to GitHub ---
 git push origin main
 
-REM --- Open Vercel dashboard ---
-start https://vercel.com/kuogopwa-tech/kenyanstylebeats
+
 
 echo.
 echo ✅ Auto-deploy complete! Commit message: %msg%
