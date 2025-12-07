@@ -73,105 +73,102 @@ body::before {
    ============================================ */
 
 /* Header base responsive styles */
+/* ------------------------------------------------------
+   GLOBAL HEADER LAYOUT
+------------------------------------------------------ */
 header {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
-  z-index: 1000;
-  background: linear-gradient(180deg, 
-    rgba(6, 8, 20, 0.95) 0%,
-    rgba(6, 8, 12, 0.4) 100%);
-  backdrop-filter: blur(20px) saturate(200%);
-  -webkit-backdrop-filter: blur(20px) saturate(200%);
-  border-bottom: 1px solid var(--border);
-  padding: 1rem clamp(1rem, 3vw, 2rem); /* Responsive padding */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  transition: var(--transition);
-  animation: headerSlideDown 0.5s ease-out;
+  padding: clamp(0.6rem, 2vw, 1.2rem) clamp(0.8rem, 3vw, 2rem);
+  gap: clamp(0.5rem, 2vw, 1.2rem);
 }
 
-/* Brand section responsive */
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  flex-shrink: 1;
-  min-width: 0; /* Allows text truncation */
+  gap: clamp(0.4rem, 1vw, 0.8rem);
+  flex: 1;
+  min-width: 0; /* Allows text to shrink correctly */
 }
 
+/* ------------------------------------------------------
+   BRAND / LOGO
+------------------------------------------------------ */
 .logo {
-  width: 40px;
-  height: 40px;
+  width: clamp(28px, 5vw, 40px);
+  height: clamp(28px, 5vw, 40px);
   border-radius: var(--radius);
   background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: white;
-  font-size: 1.2rem;
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
   flex-shrink: 0;
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0; /* Allows text truncation */
+  min-width: 0;
 }
 
 .title {
   font-weight: 700;
-  font-size: clamp(0.9rem, 2.5vw, 1.2rem); /* Fluid font size */
-  color: var(--text-primary);
+  font-size: clamp(0.85rem, 2.2vw, 1.2rem);
   letter-spacing: -0.01em;
   background: linear-gradient(135deg, var(--text-primary), var(--muted));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .brand-subtitle {
-  font-size: clamp(0.65rem, 1.5vw, 0.75rem);
+  font-size: clamp(0.6rem, 1.6vw, 0.75rem);
   color: var(--text-tertiary);
-  letter-spacing: 0.03em;
-  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Desktop navigation */
+/* ------------------------------------------------------
+   DESKTOP NAV
+------------------------------------------------------ */
+nav {
+  flex-shrink: 1;
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1vw, 14px);
+}
+
 .nav-desktop {
   display: flex;
-  gap: 0.5rem;
   align-items: center;
+  gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
-/* Mobile menu toggle (hamburger) */
+/* ------------------------------------------------------
+   MOBILE MENU TOGGLE
+------------------------------------------------------ */
 .menu-toggle {
   display: none;
-  background: none;
+  width: 42px;
+  height: 42px;
   border: none;
-  color: var(--text-primary);
   cursor: pointer;
-  padding: 8px;
+  background: none;
+  color: var(--text-primary);
   border-radius: var(--radius-sm);
-  flex-shrink: 0;
-  transition: var(--transition);
-  width: 40px;
-  height: 40px;
+  display: flex;
   align-items: center;
   justify-content: center;
+  transition: var(--transition);
 }
 
 .menu-toggle:hover {
@@ -183,16 +180,18 @@ header {
   height: 24px;
 }
 
-/* Mobile navigation overlay */
+/* ------------------------------------------------------
+   MOBILE MENU OVERLAY
+------------------------------------------------------ */
 .mobile-nav-overlay {
-  display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
-  z-index: 999;
+  display: none;
   opacity: 0;
   transition: opacity 0.3s ease;
+  z-index: 999;
 }
 
 .mobile-nav-overlay.active {
@@ -200,65 +199,99 @@ header {
   opacity: 1;
 }
 
-/* Mobile navigation menu */
+/* ------------------------------------------------------
+   MOBILE NAV PANEL
+------------------------------------------------------ */
 .mobile-nav {
+  --nav-width: min(300px, 90%);
+  --nav-bg: linear-gradient(145deg,
+    rgba(15, 16, 19, 0.98),
+    rgba(11, 12, 15, 0.99)
+  );
+  
   position: fixed;
   top: 0;
   right: 0;
-  bottom: 0;
-  width: 300px;
-  background: linear-gradient(145deg, 
-    rgba(15, 16, 19, 0.98),
-    rgba(11, 12, 15, 0.99));
+  width: var(--nav-width);
+  height: 100%;
+  
+  background: var(--nav-bg);
   border-left: 1px solid var(--border);
+  
   padding: 2rem 1.5rem;
-  z-index: 1000;
-  transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
   display: flex;
   flex-direction: column;
+  /* Explicitly align items to start */
+  align-items: stretch;
   gap: 1.5rem;
+  
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
   overflow-y: auto;
+  z-index: 1000;
 }
 
 .mobile-nav.active {
   transform: translateX(0);
 }
 
+/* MOBILE NAV HEADER - Modern clean layout */
 .mobile-nav-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  justify-content: space-between;
+  padding: 0.5rem 0.25rem 1.25rem 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
 }
 
+/* Brand logo left */
 .mobile-nav-header .logo {
-  width: 48px;
-  height: 48px;
-  font-size: 1.4rem;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  font-size: 1.15rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  flex-shrink: 0;
+  transform: translateX(2px); /* slight left offset = better look */
 }
 
+/* Close button right */
 .mobile-nav-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   background: none;
   border: none;
   color: var(--text-secondary);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   cursor: pointer;
-  padding: 8px;
   border-radius: var(--radius-sm);
-  transition: var(--transition);
+  flex-shrink: 0;
 }
 
 .mobile-nav-close:hover {
+  background: rgba(255,255,255,0.08);
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.1);
 }
 
+
+/* ------------------------------------------------------
+   MOBILE MENU BUTTONS
+------------------------------------------------------ */
 .mobile-nav-buttons {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-top: 1rem;
 }
 
 .mobile-nav-buttons .btn {
@@ -272,108 +305,63 @@ header {
   border-top: 1px solid var(--border);
 }
 
-/* Button responsive sizes */
+/* ------------------------------------------------------
+   BUTTON SIZES
+------------------------------------------------------ */
 .btn {
-  padding: clamp(0.75rem, 2vw, 0.875rem) clamp(1rem, 2.5vw, 1.75rem);
+  padding: clamp(0.75rem, 2vw, 0.9rem) clamp(1rem, 2.3vw, 1.7rem);
   font-size: clamp(0.85rem, 1.5vw, 0.95rem);
-  min-width: auto;
   white-space: nowrap;
 }
 
 .btn.secondary {
-  padding: clamp(0.625rem, 1.8vw, 0.75rem) clamp(0.875rem, 2vw, 1.25rem);
+  padding: clamp(0.6rem, 1.8vw, 0.75rem) clamp(0.85rem, 2vw, 1.25rem);
 }
 
-/* User dropdown responsive */
-#userDropdown {
-  position: relative;
-}
+/* ------------------------------------------------------
+   RESPONSIVE BREAKPOINTS
+------------------------------------------------------ */
 
-#userMenu {
-  padding: 0.5rem 0.75rem;
-}
+/* Tablet & below */
+@media (max-width: 1050px) {
+  nav { display: none; }
+  .menu-toggle { display: flex; }
 
-/* Responsive breakpoints */
-@media (max-width: 1100px) {
-  .nav-desktop {
-    gap: 0.4rem;
-  }
-  
-  .btn {
-    min-width: 100px;
-  }
-}
-
-@media (max-width: 900px) {
-  /* Hide desktop nav, show hamburger */
-  .nav-desktop {
-    display: none;
-  }
-  
-  .menu-toggle {
-    display: flex;
-  }
-  
-  /* Adjust header padding */
-  header {
-    padding: 0.875rem clamp(0.75rem, 2vw, 1.5rem);
-  }
-  
-  /* Make brand more compact */
-  .brand {
-    gap: 0.5rem;
-  }
-  
-  .logo {
-    width: 36px;
-    height: 36px;
-    font-size: 1rem;
-  }
-  
   .title {
-    font-size: 0.95rem;
-  }
-  
-  .brand-subtitle {
-    font-size: 0.6rem;
+    font-size: clamp(0.78rem, 2vw, 1rem);
   }
 }
 
-@media (max-width: 640px) {
-  /* Further compact on very small screens */
-  .brand-text {
-    max-width: 180px;
-  }
-  
-  .title {
-    font-size: 0.85rem;
-  }
-  
-  .brand-subtitle {
-    font-size: 0.55rem;
-  }
-  
+/* Mid-mobile */
+@media (max-width: 700px) {
   .logo {
-    width: 32px;
-    height: 32px;
-    font-size: 0.9rem;
+    width: clamp(26px, 6vw, 32px);
+    height: clamp(26px, 6vw, 32px);
+  }
+
+  .brand-subtitle {
+    font-size: clamp(0.55rem, 1.4vw, 0.7rem);
   }
 }
 
+/* Small mobile */
 @media (max-width: 480px) {
-  /* Adjust mobile nav width */
-  .mobile-nav {
-    width: 100%;
-  }
-  
-  .brand-text {
-    max-width: 150px;
-  }
-  
+  .brand-text { max-width: 130px; }
+
   .title {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
   }
+
+  .mobile-nav { width: 100%; } /* full-screen mobile nav */
 }
+
+/* Extra-small devices (320–360px) */
+@media (max-width: 360px) {
+  .brand-text { max-width: 100px; }
+  .title { font-size: 0.7rem; }
+  .brand-subtitle { display: none; }
+}
+
 
 /* Ensure main content doesn't get hidden under fixed header */
 .main-container {
