@@ -1,26 +1,48 @@
 @echo off
-setlocal
+echo === Pushing to GitHub ===
+echo.
 
-REM --- Navigate to project folder ---
-cd /d "%~dp0"
+REM Check for git
+git --version >nul 2>nul
+if errorlevel 1 (
+    echo Error: Git is not installed!
+    echo Download from: https://git-scm.com
+    pause
+    exit
+)
 
-REM --- Stage all changes ---
+REM Initialize git if not already
+if not exist ".git" (
+    echo Initializing git repository...
+    git init
+)
+
+REM Add all files
+echo Adding files...
 git add .
 
-REM --- Auto-generate commit message ---
-for /f "tokens=1-4 delims=/ " %%a in ('date /t') do set today=%%a-%%b-%%c
-for /f "tokens=1-2 delims=: " %%x in ('time /t') do set now=%%x-%%y
-set msg=Auto commit %today%_%now%
+REM Commit
+echo Committing changes...
+git commit -m "Update: %date% %time%"
 
-REM --- Commit changes ---
-git commit -m "%msg%"
+REM Ask for remote URL
+set /p GIT_URL="Enter GitHub repo URL (or press Enter to skip): "
 
-REM --- Push to GitHub ---
-git push origin main
-
-REM --- Open Vercel dashboard ---
-start https://vercel.com/kuogopwa-tech/kenyanstylebeats
+if not "%GIT_URL%"=="" (
+    echo Adding remote...
+    git remote remove origin 2>nul
+    git remote add origin "%GIT_URL%"
+    
+    echo Pushing to GitHub...
+    git push -u origin main
+    
+    if errorlevel 1 (
+        echo Trying master branch...
+        git branch -M master
+        git push -u origin master
+    )
+)
 
 echo.
-echo ✅ Auto-deploy complete! Commit message: %msg%
+echo === Done ===
 pause
