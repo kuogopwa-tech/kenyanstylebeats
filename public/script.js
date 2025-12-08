@@ -1972,7 +1972,7 @@ function clearKeyInput() {
 
 function getWhatsAppNumber(whatsapp) {
     // Default admin WhatsApp number (you should configure this)
-    const defaultNumber = '254796392424'; // Replace with actual admin number
+    const defaultNumber = '254748097934'; // Replace with actual admin number
     
     // Clean number (remove non-digits)
     const cleanNumber = (whatsapp || defaultNumber).replace(/\D/g, '');
