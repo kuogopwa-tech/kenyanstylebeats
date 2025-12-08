@@ -934,8 +934,7 @@ function showCheckoutModal(beatId) {
                     </p>
                 </div>
                 
-                <button onclick="showKeyInputStep('${beatId}')"
-                        class="checkout-key-button">
+                <button onclick="handleEnterKey('${beatId}')" class="checkout-key-button">
                     Enter Purchase Key
                 </button>
             </div>
@@ -1564,215 +1563,146 @@ async function checkMyPurchases() {
 // SAFE GENERATE PURCHASE KEY FUNCTION
 // ============================================
 
+// SIMPLIFIED GENERATE KEY FUNCTION
 async function generatePurchaseKeyAdmin() {
-    console.log('🔑 Generating purchase key (admin)...');
+    console.log('🔑 Generating purchase key...');
     
     try {
-        // Get elements safely
-        const beatId = document.getElementById('adminBeatSelect')?.value;
-        const userEmail = document.getElementById('adminUserEmail')?.value.trim();
-        const amountInput = document.getElementById('adminKeyAmount');
+        // Get form values
+        const beatId = document.getElementById('adminBeatSelect').value;
+        const userEmail = document.getElementById('adminUserEmail').value.trim();
+        const customAmount = document.getElementById('adminKeyAmount').value;
         const keyResult = document.getElementById('keyResult');
-        const generateBtn = document.querySelector('#generateKeyForm button[type="submit"]') || 
-                          document.querySelector('#generateKeyForm .btn') ||
-                          document.querySelector('button[onclick="generatePurchaseKeyAdmin()"]');
         
-        // Debug logging
-        console.log('Elements found:', {
-            beatId,
-            userEmail,
-            amountInput: !!amountInput,
-            keyResult: !!keyResult,
-            generateBtn: !!generateBtn
-        });
-        
-        // Validation with better error messages
-        if (!beatId) {
-            if (keyResult) {
-                showKeyResult(keyResult, '❌ Please select a beat', 'error');
-            } else {
-                showToast('Please select a beat', 'error');
-            }
+        // Validate
+        if (!beatId || !userEmail) {
+            showToast('Please select a beat and enter user email', 'error');
             return;
         }
         
-        if (!userEmail) {
-            if (keyResult) {
-                showKeyResult(keyResult, '❌ Please enter user email', 'error');
-            } else {
-                showToast('Please enter user email', 'error');
-            }
-            return;
-        }
-        
-        // Get beat price from the selected beat
+        // Find the selected beat
         const selectedBeat = allBeats.find(b => b.id === beatId);
         if (!selectedBeat) {
-            if (keyResult) {
-                showKeyResult(keyResult, '❌ Selected beat not found', 'error');
-            } else {
-                showToast('Selected beat not found', 'error');
-            }
+            showToast('Selected beat not found', 'error');
             return;
         }
         
-        // Use beat's price as default
-        let finalAmount = selectedBeat.price;
+        // Calculate amount (use custom if provided, otherwise use beat price)
+        const amount = customAmount ? parseFloat(customAmount) : selectedBeat.price;
         
-        // If amount input exists, use its value
-        if (amountInput && amountInput.value) {
-            const inputAmount = parseFloat(amountInput.value);
-            if (!isNaN(inputAmount) && inputAmount > 0) {
-                finalAmount = inputAmount;
-            }
-        }
+        // Show loading
+        keyResult.innerHTML = `
+            <div style="text-align:center;padding:20px;">
+                <div class="loading-spinner" style="margin:0 auto;width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--accent1);border-radius:50%;animation:spin 1s linear infinite;"></div>
+                <p style="margin-top:10px;color:var(--muted);">Generating key...</p>
+            </div>
+        `;
         
-        // Update button text safely
-        if (generateBtn) {
-            generateBtn.disabled = true;
-            const originalText = generateBtn.innerHTML;
+        // Make API request
+        const response = await fetch(`${API_BASE_URL}/purchases/generate-key`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                beatId,
+                userEmail,
+                amount
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.purchaseKey) {
+            const key = data.purchaseKey;
             
-            // Store original text if not already stored
-            if (!generateBtn.hasAttribute('data-original-text')) {
-                generateBtn.setAttribute('data-original-text', originalText);
-            }
-            
-            generateBtn.innerHTML = `
-                <span style="display:flex;align-items:center;gap:8px">
-                    <svg class="loading-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 12a9 9 0 11-6.219-8.56" />
-                    </svg>
-                    Generating...
-                </span>
+            // Show success with key
+            keyResult.innerHTML = `
+                <div style="text-align:center;background:var(--success-bg);padding:20px;border-radius:8px;border:2px solid var(--success);">
+                    <div style="color:var(--success);font-size:20px;margin-bottom:10px;">✅ Key Generated!</div>
+                    <div style="background:var(--card-bg);padding:15px;border-radius:6px;margin:15px 0;font-family:monospace;font-size:18px;letter-spacing:1px;">
+                        ${key}
+                    </div>
+                    <div style="margin-bottom:15px;color:var(--muted);">
+                        <div><strong>Beat:</strong> ${selectedBeat.title}</div>
+                        <div><strong>User:</strong> ${userEmail}</div>
+                        <div><strong>Amount:</strong> ${amount} KES</div>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:center;">
+                        <button class="btn small" onclick="copyToClipboard('${key}')">
+                            📋 Copy Key
+                        </button>
+                        <button class="btn small secondary" onclick="shareKeyViaWhatsApp('${key}', '${userEmail}', '${selectedBeat.title}')">
+                            📱 Share
+                        </button>
+                    </div>
+                </div>
             `;
             
-            try {
-                const response = await fetch(`${API_BASE_URL}/purchases/generate-key`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        beatId,
-                        userEmail,
-                        amount: finalAmount
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const key = data.purchaseKey;
-                    
-                    // Show success message
-                    if (keyResult) {
-                        showKeyResult(keyResult, `
-                            <div style="text-align:center;">
-                                <h4 style="margin-bottom:15px;color:var(--success);">✅ Purchase Key Generated!</h4>
-                                <div style="background:var(--card-bg);padding:15px;border-radius:8px;border:2px solid var(--accent1);margin-bottom:15px;">
-                                    <div style="font-family:monospace;font-size:20px;font-weight:bold;color:var(--accent1);letter-spacing:1px;margin-bottom:10px;">
-                                        ${key}
-                                    </div>
-                                    <div style="margin-top:10px;font-size:14px;color:var(--muted);">
-                                        <div><strong>Beat:</strong> ${selectedBeat.title}</div>
-                                        <div><strong>User:</strong> ${userEmail}</div>
-                                        <div><strong>Amount:</strong> ${finalAmount} KES</div>
-                                    </div>
-                                </div>
-                                <div style="display:flex;gap:10px;justify-content:center;">
-                                    <button class="btn" onclick="copyKeyToClipboard('${key}')">
-                                        📋 Copy Key
-                                    </button>
-                                    <button class="btn secondary" onclick="sendKeyViaWhatsApp('${key}', '${userEmail}', '${selectedBeat.title}', ${finalAmount})">
-                                        💬 WhatsApp
-                                    </button>
-                                </div>
-                            </div>
-                        `, 'success');
-                    } else {
-                        showToast(`Key generated: ${key}`, 'success');
-                    }
-                    
-                    // Refresh keys list
-                    setTimeout(() => {
-                        if (typeof loadPurchaseKeys === 'function') {
-                            loadPurchaseKeys();
-                        }
-                    }, 1000);
-                    
-                    // Reset form
-                    const generateForm = document.getElementById('generateKeyForm');
-                    if (generateForm) {
-                        generateForm.reset();
-                    }
-                    
-                    showToast('Purchase key generated successfully!', 'success');
-                    
-                } else {
-                    const errorMsg = data.message || 'Failed to generate key';
-                    if (keyResult) {
-                        showKeyResult(keyResult, `❌ ${errorMsg}`, 'error');
-                    } else {
-                        showToast(errorMsg, 'error');
-                    }
+            // Reset form
+            document.getElementById('adminUserEmail').value = '';
+            document.getElementById('adminKeyAmount').value = '';
+            document.getElementById('adminBeatSelect').selectedIndex = 0;
+            
+            // Refresh keys list
+            setTimeout(() => {
+                if (typeof loadPurchaseKeys === 'function') {
+                    loadPurchaseKeys();
                 }
-            } catch (error) {
-                console.error('Generate key error:', error);
-                const errorMsg = 'Network error. Please check connection and try again.';
-                if (keyResult) {
-                    showKeyResult(keyResult, `❌ ${errorMsg}`, 'error');
-                } else {
-                    showToast(errorMsg, 'error');
-                }
-            } finally {
-                // Restore button state
-                generateBtn.disabled = false;
-                const originalText = generateBtn.getAttribute('data-original-text') || 'Generate Key';
-                generateBtn.innerHTML = originalText;
-            }
+            }, 1000);
+            
+            showToast('Purchase key generated successfully!', 'success');
+            
         } else {
-            // If button not found, proceed without UI updates
-            console.warn('Generate button not found, proceeding without UI updates');
-            
-            const response = await fetch(`${API_BASE_URL}/purchases/generate-key`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    beatId,
-                    userEmail,
-                    amount: finalAmount
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                const key = data.purchaseKey;
-                showToast(`Key generated: ${key}`, 'success');
-                
-                // Try to show in keyResult if exists
-                if (keyResult) {
-                    showKeyResult(keyResult, `✅ Key generated: ${key}`, 'success');
-                }
-                
-                // Refresh keys list
-                setTimeout(() => {
-                    if (typeof loadPurchaseKeys === 'function') {
-                        loadPurchaseKeys();
-                    }
-                }, 1000);
-            } else {
-                showToast(data.message || 'Failed to generate key', 'error');
-            }
+            throw new Error(data.message || 'Failed to generate key');
         }
+        
     } catch (error) {
-        console.error('Unexpected error in generatePurchaseKeyAdmin:', error);
-        showToast('An unexpected error occurred', 'error');
+        console.error('Generate key error:', error);
+        const keyResult = document.getElementById('keyResult');
+        if (keyResult) {
+            keyResult.innerHTML = `
+                <div style="text-align:center;background:var(--error-bg);padding:15px;border-radius:8px;color:var(--error);">
+                    ❌ ${error.message || 'Failed to generate key'}
+                </div>
+            `;
+        }
+        showToast(error.message || 'Failed to generate key', 'error');
     }
+}
+
+// Helper function to reset generate form
+function resetGenerateForm() {
+    document.getElementById('adminUserEmail').value = '';
+    document.getElementById('adminKeyAmount').value = '';
+    document.getElementById('adminBeatSelect').selectedIndex = 0;
+    const keyResult = document.getElementById('keyResult');
+    if (keyResult) keyResult.innerHTML = '';
+    showToast('Form reset', 'info');
+}
+
+// Copy to clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text)
+        .then(() => showToast('Copied to clipboard!', 'success'))
+        .catch(() => {
+            // Fallback for older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('Copied to clipboard!', 'success');
+        });
+}
+
+// Share via WhatsApp
+function shareKeyViaWhatsApp(key, email, beatTitle) {
+    const message = `Hello! Your purchase key for "${beatTitle}" is: ${key}\n\nUse this key on Empire Beatstore to download your beat.\n\nKey: ${key}\nEmail: ${email}\nNote: Key expires in 24 hours.`;
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
 }
 
 // Enhanced showKeyResult function
