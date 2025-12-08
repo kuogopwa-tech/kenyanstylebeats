@@ -12,6 +12,10 @@ let allBeats = [];
 let currentSeries = 'all';
 let searchQuery = '';
 
+let adminPanelInitialized = false;
+let adminTabsInitialized = false;
+let usersLoaded = false;
+let currentAdminTab = null;
 
 // Mobile menu functionality
 const mobileMenuToggle = document.getElementById('mobileMenuToggle');
@@ -97,6 +101,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Then load beats with proper user permissions
         loadBeats();
     });
+
+     initAdminPanelButton();
+    setupAdminPanelNavigation(); 
     
     // Set current year in footer
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -3429,6 +3436,7 @@ console.log('✅ EMPIRE BEATSTORE script loaded successfully!');
 // ============================================
 
 // Initialize admin panel button
+// Replace your existing initAdminPanelButton function with this:
 function initAdminPanelButton() {
     const adminPanelBtn = document.getElementById('adminPanelBtn');
     
@@ -3437,8 +3445,15 @@ function initAdminPanelButton() {
         return;
     }
     
+    // Remove any existing event listeners first
+    const newBtn = adminPanelBtn.cloneNode(true);
+    adminPanelBtn.parentNode.replaceChild(newBtn, adminPanelBtn);
+    
+    // Get fresh reference
+    const freshBtn = document.getElementById('adminPanelBtn');
+    
     // Add click event listener
-    adminPanelBtn.addEventListener('click', function(e) {
+    freshBtn.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
         
@@ -3470,32 +3485,7 @@ function initAdminPanelButton() {
     console.log('✅ Admin panel button initialized');
 }
 
-// Show admin panel
-function showAdminPanel() {
-    console.log('🎛️ Showing admin panel...');
-    
-    const modal = document.getElementById('adminPanelModal');
-    if (!modal) {
-        console.log('❌ Admin panel modal not found');
-        showToast('Admin panel not available', 'error');
-        return;
-    }
-    
-    // Load data for admin panel
-    loadAdminPanelData();
-    
-    // Show modal
-    modal.style.display = 'flex';
-    modal.setAttribute('aria-hidden', 'false');
-    
-    // Setup tab switching
-    setupAdminTabs();
-    
-    // Start with first tab
-    switchAdminTab('generate');
-    
-    console.log('✅ Admin panel displayed');
-}
+
 
 // Load admin stats
 async function loadAdminStats() {
@@ -3610,54 +3600,145 @@ async function loadAdminPanelData() {
 }
 
 // Setup admin tabs
+// Fixed admin tab switching - SIMPLE VERSION
+// Replace your existing setupAdminTabs function with this:
 function setupAdminTabs() {
-    const tabs = document.querySelectorAll('.admin-tab');
-    
-    if (!tabs.length) {
-        console.log('❌ No admin tabs found');
+    if (adminTabsInitialized) {
+        console.log('⚠️ Admin tabs already initialized, skipping...');
         return;
     }
     
-    tabs.forEach(tab => {
-        // Remove existing listeners to prevent duplicates
-        const newTab = tab.cloneNode(true);
-        tab.parentNode.replaceChild(newTab, tab);
-        
-        newTab.addEventListener('click', function() {
+    console.log('🔧 Setting up admin tabs...');
+    adminTabsInitialized = true;
+    
+    // Remove all existing event listeners first
+    const sidebarItems = document.querySelectorAll('.sidebar-item[data-tab]');
+    
+    sidebarItems.forEach(item => {
+        // Clone and replace to remove old event listeners
+        const newItem = item.cloneNode(true);
+        item.parentNode.replaceChild(newItem, item);
+    });
+    
+    // Get fresh references
+    const freshItems = document.querySelectorAll('.sidebar-item[data-tab]');
+    
+    freshItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
             const tabId = this.dataset.tab;
             console.log(`📑 Switching to admin tab: ${tabId}`);
             switchAdminTab(tabId);
         });
     });
     
-    console.log('✅ Admin tabs initialized');
+    console.log(`✅ Admin tabs initialized (${freshItems.length} tabs found)`);
+}
+
+// Handle ALL admin panel navigation clicks
+function setupAdminPanelNavigation() {
+    console.log('🔧 Setting up admin panel navigation...');
+    
+    // Handle sidebar navigation
+    document.addEventListener('click', function(e) {
+        // Check if clicked on sidebar item
+        const sidebarItem = e.target.closest('.sidebar-item[data-tab]');
+        if (sidebarItem) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const tabId = sidebarItem.getAttribute('data-tab');
+            console.log(`📑 Sidebar click: Switching to ${tabId} tab`);
+            switchAdminTab(tabId);
+            return;
+        }
+        
+        // Handle close button
+        const closeBtn = e.target.closest('.modal-close[data-close]');
+        if (closeBtn && document.getElementById('adminPanelModal').style.display === 'flex') {
+            e.preventDefault();
+            closeAdminPanel();
+            return;
+        }
+        
+        // Handle logout button in sidebar
+        const logoutBtn = e.target.closest('.sidebar-action');
+        if (logoutBtn) {
+            e.preventDefault();
+            logout();
+            closeAdminPanel();
+            return;
+        }
+    });
+    
+    // Handle keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.getElementById('adminPanelModal').style.display === 'flex') {
+            closeAdminPanel();
+        }
+    });
 }
 
 // Switch admin tab
+// Switch admin tab - FIXED VERSION
+// Update switchAdminTab function for users tab
+// Replace your existing switchAdminTab function with this:
 function switchAdminTab(tabId) {
-    // Update active tab
-    document.querySelectorAll('.admin-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.tab === tabId);
+    // Don't re-switch to same tab
+    if (currentAdminTab === tabId) {
+        console.log(`⚠️ Already on ${tabId} tab, skipping...`);
+        return;
+    }
+    
+    console.log(`🔄 Switching to tab: ${tabId}`);
+    currentAdminTab = tabId;
+    
+    // Update active sidebar item
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.tab === tabId);
     });
     
-    // Show active pane
-    document.querySelectorAll('.admin-tab-pane').forEach(pane => {
+    // Show active content tab
+    document.querySelectorAll('.admin-tab-content').forEach(pane => {
         pane.classList.toggle('active', pane.id === tabId + 'Tab');
     });
     
     // Load specific data for tab if needed
     switch(tabId) {
+        case 'dashboard':
+            console.log('📊 Loading dashboard...');
+            if (typeof loadAdminStats === 'function') {
+                loadAdminStats();
+            }
+            break;
+            
         case 'keys':
             console.log('🔑 Loading purchase keys...');
-            loadPurchaseKeys();
+            if (typeof loadPurchaseKeys === 'function') {
+                loadPurchaseKeys();
+            }
             break;
-        case 'stats':
-            console.log('📊 Loading stats...');
-            loadAdminStats();
+            
+        case 'generate':
+            console.log('🔑 Loading generate tab...');
+            if (typeof loadBeatsForAdmin === 'function') {
+                loadBeatsForAdmin();
+            }
             break;
+            
         case 'users':
             console.log('👥 Loading users...');
-            loadUsersForAdmin();
+            // Reset usersLoaded flag when switching to users tab
+            usersLoaded = false;
+            if (typeof loadUsersForAdmin === 'function') {
+                loadUsersForAdmin();
+            }
+            break;
+            
+        case 'settings':
+            console.log('⚙️ Loading settings...');
             break;
     }
 }
@@ -3733,10 +3814,17 @@ async function loadBeatsForAdmin() {
 }
 
 // Load users for admin
+// Replace your existing loadUsersForAdmin function with this:
 async function loadUsersForAdmin() {
+    // Prevent loading multiple times
+    if (usersLoaded) {
+        console.log('⚠️ Users already loaded, skipping...');
+        return;
+    }
+    
+    console.log('📡 Loading users for admin...');
+    
     try {
-        console.log('📡 Loading users for admin...');
-        
         const response = await fetch(`${API_BASE_URL}/auth/users`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
@@ -3747,10 +3835,12 @@ async function loadUsersForAdmin() {
         
         if (data.success) {
             window.allUsers = data.users || [];
-            const select = document.getElementById('adminUserSelect');
-            const usersList = document.getElementById('usersList');
+            
+            // Mark as loaded BEFORE displaying
+            usersLoaded = true;
             
             // Update dropdown
+            const select = document.getElementById('adminUserSelect');
             if (select) {
                 select.innerHTML = '<option value="">-- Select a user --</option>';
                 data.users.forEach(user => {
@@ -3762,6 +3852,7 @@ async function loadUsersForAdmin() {
             }
             
             // Update users list
+            const usersList = document.getElementById('usersList');
             if (usersList) {
                 displayUsers(data.users);
             }
@@ -3775,70 +3866,232 @@ async function loadUsersForAdmin() {
 }
 
 // Display users in admin panel
+// Display users in admin panel - CORRECTED VERSION
+// Display users in admin panel - FIXED VERSION
+// REPLACE your displayUsers function with this:
 function displayUsers(users) {
-    const usersList = document.getElementById('usersList');
-    if (!usersList) return;
+    console.log('👥 Displaying users called with:', users?.length || 0, 'users');
     
-    if (!users || users.length === 0) {
-        usersList.innerHTML = `
-            <div style="text-align:center;padding:40px 20px;color:var(--muted);">
-                No users found
+    // DEBUG: Check what's in the users array
+    console.log('🔍 Users data:', users);
+    
+    // Try multiple ways to find the table body
+    let tableBody = null;
+    
+    // Try by ID first
+    tableBody = document.getElementById('usersTableBody');
+    console.log('🔍 By ID (usersTableBody):', tableBody ? 'Found' : 'Not found');
+    
+    // If not found, try finding any tbody in usersTab
+    if (!tableBody) {
+        const usersTab = document.getElementById('usersTab');
+        if (usersTab) {
+            tableBody = usersTab.querySelector('tbody');
+            console.log('🔍 By querySelector in usersTab:', tableBody ? 'Found' : 'Not found');
+        }
+    }
+    
+    // If still not found, check ALL tbodies
+    if (!tableBody) {
+        const allTbodies = document.querySelectorAll('tbody');
+        console.log('🔍 All tbody elements found:', allTbodies.length);
+        if (allTbodies.length > 0) {
+            tableBody = allTbodies[0]; // Use first one
+        }
+    }
+    
+    // CREATE TABLE IF IT DOESN'T EXIST
+    if (!tableBody) {
+        console.log('📝 Creating users table structure...');
+        
+        // Find users tab
+        const usersTab = document.getElementById('usersTab');
+        if (!usersTab) {
+            console.error('❌ usersTab element not found!');
+            showToast('Users tab not found', 'error');
+            return;
+        }
+        
+        // Create table HTML
+        usersTab.innerHTML = `
+            <div class="admin-table-container">
+                <div class="admin-filters">
+                    <input type="text" id="searchUsers" placeholder="Search users..." oninput="filterUsers()">
+                    <select id="userRoleFilter" onchange="filterUsers()">
+                        <option value="">All Roles</option>
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Contact</th>
+                            <th>Role</th>
+                            <th>Purchases</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Users will load here -->
+                    </tbody>
+                </table>
             </div>
         `;
+        
+        tableBody = document.getElementById('usersTableBody');
+        console.log('✅ Created new table body:', tableBody ? 'Found' : 'Still missing');
+    }
+    
+    if (!tableBody) {
+        console.error('❌ Could not find or create users table body');
+        showToast('Could not display users table', 'error');
         return;
     }
     
-    usersList.innerHTML = users.map(user => `
-        <div class="user-card" style="padding:15px;border-bottom:1px solid var(--border);transition:background 0.2s;">
-            <div class="user-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <div>
-                    <strong>${user.name}</strong>
-                    <span class="user-role ${user.role}" style="padding:2px 8px;border-radius:12px;font-size:12px;font-weight:500;margin-left:8px;background:${user.role === 'admin' ? '#ffebee' : '#e3f2fd'};color:${user.role === 'admin' ? '#c62828' : '#1565c0'};">${user.role}</span>
-                </div>
-                <div style="font-size:14px;color:var(--muted);">
-                    Joined: ${new Date(user.createdAt).toLocaleDateString()}
-                </div>
-            </div>
-            
-            <div class="user-details" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;font-size:14px;color:var(--muted);">
-                <div>
-                    <strong>Email:</strong> ${user.email}
-                </div>
-                <div>
-                    <strong>Purchases:</strong> ${user.purchaseCount || 0}
-                </div>
-                ${user.phone ? `
-                    <div>
-                        <strong>Phone:</strong> ${user.phone}
-                    </div>
-                ` : ''}
-                ${user.whatsapp ? `
-                    <div>
-                        <strong>WhatsApp:</strong> ${user.whatsapp}
-                    </div>
-                ` : ''}
-            </div>
-            
-            <div class="user-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-                <button class="btn small secondary" onclick="generateKeyForUser('${user._id}', '${user.email}')" style="padding:4px 10px;font-size:12px;">
-                    Generate Key
-                </button>
-                ${user.role === 'user' ? `
-                    <button class="btn small secondary" onclick="makeAdmin('${user._id}')" style="padding:4px 10px;font-size:12px;">
-                        Make Admin
-                    </button>
-                ` : ''}
-                <a href="https://wa.me/${getWhatsAppNumber(user.whatsapp)}?text=${encodeURIComponent(`Hello ${user.name}! This is from Empire Beatstore.`)}" 
-                   target="_blank" 
-                   class="btn small" 
-                   style="background:#25D366;color:white;padding:4px 10px;font-size:12px;text-decoration:none;">
-                    WhatsApp
-                </a>
-            </div>
-        </div>
-    `).join('');
+    console.log('🎨 Now calling displayUsersInTable with table body:', tableBody);
+    displayUsersInTable(users, tableBody);
 }
 
+// Helper function to display users in table
+function displayUsersInTable(users, tableBody) {
+    console.log('📊 Rendering', users?.length || 0, 'users to table body:', tableBody);
+    
+    if (!users || users.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center;padding:40px 20px;color:var(--muted);">
+                    No users found
+                </td>
+            </tr>
+        `;
+        console.log('📭 No users to display');
+        return;
+    }
+    
+    console.log('🎨 First user sample:', users[0]);
+    
+    // Clear existing content safely
+    tableBody.innerHTML = '';
+    
+    // Create HTML for each user
+    users.forEach((user, index) => {
+        console.log(`👤 Processing user ${index + 1}:`, user.name || user.email);
+        
+        // Extract user data safely
+        const userId = user._id || user.id || `user-${index}`;
+        const userName = user.name || 'Unknown User';
+        const userEmail = user.email || 'No email';
+        const userRole = user.role || 'user';
+        const purchaseCount = user.purchaseCount || user.purchases?.length || 0;
+        const createdAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A';
+        const shortId = userId.substring(0, 8) + '...';
+        const userInitial = userName.charAt(0).toUpperCase();
+        
+        // Role styling
+        const roleColor = userRole === 'admin' ? '#dc3545' : '#28a745';
+        const roleBg = userRole === 'admin' ? '#ffebee' : '#e3f2fd';
+        
+        // Create row element
+        const row = document.createElement('tr');
+        row.setAttribute('data-user-id', userId);
+        row.style.cssText = 'animation: fadeIn 0.3s ease;';
+        
+        row.innerHTML = `
+            <td style="vertical-align:middle;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;background:var(--accent1);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;">
+                        ${userInitial}
+                    </div>
+                    <div>
+                        <div style="font-weight:500;color:var(--text);">${userName}</div>
+                        <div style="font-size:11px;color:var(--muted);margin-top:2px;">ID: ${shortId}</div>
+                    </div>
+                </div>
+            </td>
+            <td style="vertical-align:middle;">
+                <div style="font-size:14px;color:var(--text);">${userEmail}</div>
+                ${user.phone ? `<div style="font-size:12px;color:var(--muted);margin-top:2px;">📱 ${user.phone}</div>` : ''}
+            </td>
+            <td style="vertical-align:middle;">
+                <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:${roleBg};color:${roleColor};border:1px solid ${roleColor}20;display:inline-block;">
+                    ${userRole.toUpperCase()}
+                </span>
+            </td>
+            <td style="vertical-align:middle;">
+                <div style="text-align:center;font-weight:600;font-size:16px;color:var(--accent1);">${purchaseCount}</div>
+                <div style="font-size:11px;color:var(--muted);text-align:center;">purchases</div>
+            </td>
+            <td style="vertical-align:middle;">
+                <div style="font-size:14px;color:var(--text);">${createdAt}</div>
+                <div style="font-size:11px;color:var(--muted);">${user.createdAt ? formatTimeAgo(user.createdAt) : ''}</div>
+            </td>
+            <td style="vertical-align:middle;">
+                <div style="display:flex;gap:8px;justify-content:center;">
+                    <button class="btn-icon small" onclick="generateKeyForUser('${userId}', '${userEmail}')" title="Generate Key" style="background:var(--accent1);color:white;border:none;border-radius:4px;padding:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                        </svg>
+                    </button>
+                    
+                    ${userRole === 'user' ? `
+                        <button class="btn-icon small" onclick="makeAdmin('${userId}')" title="Make Admin" style="background:#17a2b8;color:white;border:none;border-radius:4px;padding:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 0 0 8 11a4 4 0 1 1 8 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0 0 15.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 0 0 8 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path>
+                            </svg>
+                        </button>
+                    ` : ''}
+                    
+                    <button class="btn-icon small" onclick="viewUserDetails('${userId}')" title="View Details" style="background:var(--muted);color:white;border:none;border-radius:4px;padding:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        // Append row to table
+        tableBody.appendChild(row);
+    });
+    
+    console.log('✅ Users table updated with', users.length, 'users');
+    
+    // Force a visual check
+    setTimeout(() => {
+        console.log('👁️ Visual check - table rows count:', tableBody.querySelectorAll('tr').length);
+        
+        // Highlight the table for debugging
+        const table = tableBody.closest('table');
+        if (table) {
+            table.style.border = '2px solid #4CAF50';
+            table.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
+            
+            // Remove highlight after 2 seconds
+            setTimeout(() => {
+                table.style.border = '';
+                table.style.boxShadow = '';
+            }, 2000);
+        }
+    }, 100);
+}
+
+// Add this helper function to format time ago
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+}
 // Quick generate for user
 function generateKeyForUser(userId, userEmail) {
     console.log(`🔑 Quick generate for user: ${userEmail}`);
@@ -3929,25 +4182,37 @@ async function loadPurchaseKeys() {
 }
 
 // Display keys in admin panel
+// Display keys in admin panel - CORRECTED VERSION
 function displayKeys(keys) {
-    const keysList = document.getElementById('keysList');
-    if (!keysList) return;
+    const keysTableBody = document.getElementById('keysTableBody');
+    const keysCount = document.getElementById('keysCount');
     
-    if (!keys || keys.length === 0) {
-        keysList.innerHTML = `
-            <div style="text-align:center;padding:40px 20px;color:var(--muted);">
-                No purchase keys found
-            </div>
-        `;
+    if (!keysTableBody) {
+        console.log('❌ keysTableBody element not found');
         return;
     }
     
+    if (!keys || keys.length === 0) {
+        keysTableBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center;padding:40px 20px;color:var(--muted);">
+                    No purchase keys found
+                </td>
+            </tr>
+        `;
+        if (keysCount) keysCount.textContent = '0';
+        return;
+    }
+    
+    // Update count
+    if (keysCount) keysCount.textContent = keys.length;
+    
     // Paginate
-    const start = (window.currentPage || 1) - 1 * 10;
+    const start = (window.currentPage || 1 - 1) * 10;
     const end = start + 10;
     const paginatedKeys = keys.slice(start, end);
     
-    keysList.innerHTML = paginatedKeys.map(purchase => {
+    keysTableBody.innerHTML = paginatedKeys.map(purchase => {
         const statusColors = {
             pending: { bg: '#fff3cd', color: '#856404' },
             used: { bg: '#d4edda', color: '#155724' },
@@ -3958,67 +4223,83 @@ function displayKeys(keys) {
         const statusStyle = statusColors[purchase.status] || statusColors.pending;
         
         return `
-            <div class="key-card" style="padding:15px;border-bottom:1px solid var(--border);transition:background 0.2s;">
-                <div class="key-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <div class="key-code" style="font-family:monospace;font-size:16px;font-weight:bold;color:var(--accent1);background:var(--card-bg);padding:4px 8px;border-radius:4px;letter-spacing:1px;">
+            <tr>
+                <td>
+                    <code style="font-family:monospace;font-size:13px;color:var(--accent1);background:var(--card-bg);padding:4px 8px;border-radius:4px;letter-spacing:1px;">
                         ${purchase.purchaseKey}
+                    </code>
+                </td>
+                <td>
+                    <div>
+                        <div style="font-weight:500;">${purchase.beat?.title || 'N/A'}</div>
+                        <div style="font-size:12px;color:var(--muted);">${purchase.beat?.series || ''}</div>
                     </div>
-                    <span class="key-status" style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:${statusStyle.bg};color:${statusStyle.color};">
+                </td>
+                <td>
+                    <div>
+                        <div style="font-weight:500;">${purchase.user?.name || 'N/A'}</div>
+                        <div style="font-size:12px;color:var(--muted);">${purchase.user?.email || ''}</div>
+                    </div>
+                </td>
+                <td>
+                    <span style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:${statusStyle.bg};color:${statusStyle.color};">
                         ${purchase.status}
                     </span>
-                </div>
-                
-                <div class="key-details" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;font-size:14px;color:var(--muted);">
-                    <div>
-                        <strong>Beat:</strong> ${purchase.beat?.title || 'N/A'}
+                </td>
+                <td>
+                    <div>${new Date(purchase.expiresAt).toLocaleDateString()}</div>
+                    <div style="font-size:12px;color:var(--muted);">
+                        ${purchase.status === 'pending' ? 'Expires in: ' + getTimeUntilExpiry(purchase.expiresAt) : 'Expired'}
                     </div>
-                    <div>
-                        <strong>User:</strong> ${purchase.user?.name || 'N/A'} (${purchase.user?.email || 'N/A'})
-                    </div>
-                    <div>
-                        <strong>Amount:</strong> ${purchase.amount} KES
-                    </div>
-                    <div>
-                        <strong>Created:</strong> ${new Date(purchase.createdAt).toLocaleDateString()}
-                    </div>
-                    <div>
-                        <strong>Expires:</strong> ${new Date(purchase.expiresAt).toLocaleDateString()}
-                    </div>
-                    ${purchase.usedAt ? `
-                        <div>
-                            <strong>Used:</strong> ${new Date(purchase.usedAt).toLocaleDateString()}
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="key-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-                    <button class="btn small secondary" onclick="copyKey('${purchase.purchaseKey}')" style="padding:4px 10px;font-size:12px;">
-                        Copy Key
-                    </button>
-                    
-                    <a href="https://wa.me/${getWhatsAppNumber(purchase.user?.whatsapp)}?text=${encodeURIComponent(`Hello ${purchase.user?.name}! Your purchase key for "${purchase.beat?.title}" is: ${purchase.purchaseKey}. Enter this key on the website to download.`)}" 
-                       target="_blank" 
-                       class="btn small" 
-                       style="background:#25D366;color:white;padding:4px 10px;font-size:12px;text-decoration:none;">
-                        WhatsApp User
-                    </a>
-                    
-                    ${purchase.status === 'pending' ? `
-                        <button class="btn small secondary" onclick="extendKey('${purchase._id}')" style="padding:4px 10px;font-size:12px;">
-                            Extend 24h
+                </td>
+                <td>
+                    <div style="display:flex;gap:5px;">
+                        <button class="btn-icon small" onclick="copyKey('${purchase.purchaseKey}')" title="Copy Key">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
                         </button>
-                        <button class="btn small secondary" onclick="cancelKey('${purchase._id}')" style="padding:4px 10px;font-size:12px;">
-                            Cancel
+                        ${purchase.status === 'pending' ? `
+                            <button class="btn-icon small" onclick="extendKey('${purchase._id}')" title="Extend 24h">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon small" onclick="cancelKey('${purchase._id}')" title="Cancel Key" style="color:#dc3545;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        ` : ''}
+                        <button class="btn-icon small" onclick="viewKeyDetails('${purchase._id}')" title="View Details">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
                         </button>
-                    ` : ''}
-                    
-                    <button class="btn small secondary" onclick="viewKeyDetails('${purchase._id}')" style="padding:4px 10px;font-size:12px;">
-                        Details
-                    </button>
-                </div>
-            </div>
+                    </div>
+                </td>
+            </tr>
         `;
     }).join('');
+}
+
+// Helper function to get time until expiry
+function getTimeUntilExpiry(expiryDate) {
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    const diffMs = expiry - now;
+    
+    if (diffMs <= 0) return 'Expired';
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (diffHours > 0) {
+        return `${diffHours}h ${diffMinutes}m`;
+    } else {
+        return `${diffMinutes}m`;
+    }
 }
 
 // Update pagination
@@ -4080,6 +4361,7 @@ function changeKeysPage(page) {
 }
 
 // Filter keys
+// Filter keys - UPDATED VERSION
 function filterKeys() {
     const search = document.getElementById('searchKeys')?.value.toLowerCase() || '';
     const status = document.getElementById('keyStatusFilter')?.value || '';
@@ -4095,7 +4377,49 @@ function filterKeys() {
     
     window.currentPage = 1;
     displayKeys(filtered);
-    updatePagination(filtered.length);
+    updatePagination();
+}
+
+// Filter users - NEW FUNCTION
+function filterUsers() {
+    const search = document.getElementById('searchUsers')?.value.toLowerCase() || '';
+    const role = document.getElementById('userRoleFilter')?.value || '';
+    
+    const filtered = (window.allUsers || []).filter(user => {
+        const matchesSearch = user.name?.toLowerCase().includes(search) ||
+                             user.email?.toLowerCase().includes(search);
+        const matchesRole = !role || user.role === role;
+        return matchesSearch && matchesRole;
+    });
+    
+    displayUsers(filtered);
+}
+
+// Refresh stats function
+function refreshStats() {
+    console.log('🔄 Refreshing admin stats...');
+    
+    // Show loading state on refresh button
+    const refreshBtn = document.querySelector('.btn.secondary.small[onclick="refreshStats()"]');
+    if (refreshBtn) {
+        const originalHTML = refreshBtn.innerHTML;
+        refreshBtn.innerHTML = `
+            <svg class="loading-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Refreshing...
+        `;
+        refreshBtn.disabled = true;
+        
+        setTimeout(() => {
+            loadAdminStats();
+            refreshBtn.innerHTML = originalHTML;
+            refreshBtn.disabled = false;
+            showToast('Stats refreshed', 'success');
+        }, 1000);
+    } else {
+        loadAdminStats();
+    }
 }
 
 // Refresh keys
@@ -4132,4 +4456,195 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set current year in footer
     document.getElementById('year').textContent = new Date().getFullYear();
+});
+
+// ============================================
+// UPDATED ADMIN PANEL FUNCTIONS
+// ============================================
+
+// Setup admin tabs - UPDATED VERSION
+function setupAdminTabs() {
+    console.log('🔧 Setting up admin tabs...');
+    
+    // Remove existing event listeners first
+    const sidebarItems = document.querySelectorAll('.sidebar-item[data-tab]');
+    sidebarItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tabId = this.dataset.tab;
+            console.log(`📑 Switching to admin tab: ${tabId}`);
+            switchAdminTab(tabId);
+        });
+    });
+    
+    console.log(`✅ Admin tabs initialized (${sidebarItems.length} tabs found)`);
+}
+
+// Switch admin tab - UPDATED VERSION
+function switchAdminTab(tabId) {
+    console.log(`🔄 Switching to tab: ${tabId}`);
+    
+    // Update active sidebar item
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.tab === tabId);
+    });
+    
+    // Show active content tab
+    document.querySelectorAll('.admin-tab-content').forEach(pane => {
+        pane.classList.toggle('active', pane.id === tabId + 'Tab');
+    });
+    
+    // Load specific data for tab if needed
+    switch(tabId) {
+        case 'dashboard':
+            console.log('📊 Loading dashboard...');
+            if (typeof loadAdminStats === 'function') {
+                loadAdminStats();
+            }
+            break;
+        case 'keys':
+            console.log('🔑 Loading purchase keys...');
+            if (typeof loadPurchaseKeys === 'function') {
+                loadPurchaseKeys();
+            }
+            break;
+        case 'generate':
+            console.log('🔑 Loading generate tab...');
+            // Load beats dropdown if not already loaded
+            if (typeof loadBeatsForAdmin === 'function') {
+                loadBeatsForAdmin();
+            }
+            break;
+        case 'users':
+            console.log('👥 Loading users...');
+            if (typeof loadUsersForAdmin === 'function') {
+                loadUsersForAdmin();
+            }
+            break;
+        case 'settings':
+            console.log('⚙️ Loading settings...');
+            // Settings tab doesn't need additional loading
+            break;
+    }
+}
+
+// Load beats for admin dropdown - ADD THIS FUNCTION IF NOT EXISTS
+async function loadBeatsForAdmin() {
+    try {
+        console.log('📡 Loading beats for admin dropdown...');
+        
+        const response = await fetch(`${API_BASE_URL}/beats`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const select = document.getElementById('adminBeatSelect');
+            if (!select) return;
+            
+            // Clear existing options except first
+            select.innerHTML = '<option value="">Choose a beat...</option>';
+            
+            data.beats.forEach(beat => {
+                const option = document.createElement('option');
+                option.value = beat.id;
+                option.textContent = `${beat.title} (${beat.series}) - ${beat.price} KES`;
+                select.appendChild(option);
+            });
+            
+            console.log(`✅ Loaded ${data.beats.length} beats for admin dropdown`);
+        }
+    } catch (error) {
+        console.error('Error loading beats for admin:', error);
+    }
+}
+
+// Update showAdminPanel function to properly setup tabs
+// Replace your existing showAdminPanel function with this:
+async function showAdminPanel() {
+    console.log('🎛️ Admin panel button clicked');
+    
+    // Prevent multiple initializations
+    if (!adminPanelInitialized) {
+        adminPanelInitialized = true;
+        console.log('📡 Loading admin panel data...');
+        await loadAdminPanelData();
+    }
+    
+    const modal = document.getElementById('adminPanelModal');
+    if (!modal) {
+        console.log('❌ Admin panel modal not found');
+        showToast('Admin panel not available', 'error');
+        return;
+    }
+    
+    // Show modal
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    
+    // Setup tabs ONCE
+    if (!adminTabsInitialized) {
+        setupAdminTabs();
+        adminTabsInitialized = true;
+    }
+    
+    // Start with dashboard tab active
+    switchAdminTab('dashboard');
+    
+    console.log('✅ Admin panel displayed');
+}
+
+// Update loadAdminPanelData function
+async function loadAdminPanelData() {
+    console.log('📡 Loading admin panel data...');
+    
+    try {
+        // Load beats for dropdown
+        await loadBeatsForAdmin();
+        
+        // Load users
+        await loadUsersForAdmin();
+        
+        // Load stats
+        if (typeof loadAdminStats === 'function') {
+            await loadAdminStats();
+        }
+        
+        console.log('✅ Admin panel data loaded');
+    } catch (error) {
+        console.error('Error loading admin panel data:', error);
+        showToast('Error loading admin data', 'error');
+    }
+}
+
+// Add this function to handle sidebar item clicks directly
+function setupAdminSidebarNavigation() {
+    document.addEventListener('click', function(e) {
+        // Check if clicked element is a sidebar item
+        const sidebarItem = e.target.closest('.sidebar-item[data-tab]');
+        if (sidebarItem && document.getElementById('adminPanelModal').style.display === 'flex') {
+            e.preventDefault();
+            const tabId = sidebarItem.dataset.tab;
+            switchAdminTab(tabId);
+        }
+        
+        // Handle close button
+        if (e.target.closest('.modal-close') && e.target.closest('#adminPanelModal')) {
+            closeAdminPanel();
+        }
+    });
+}
+
+// Initialize admin sidebar navigation when DOM loads
+document.addEventListener('DOMContentLoaded', function() {
+    setupAdminSidebarNavigation();
+    
+    // Also add keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        const adminModal = document.getElementById('adminPanelModal');
+        if (adminModal && adminModal.style.display === 'flex') {
+            // Handle escape key to close
+            if (e.key === 'Escape') {
+                closeAdminPanel();
+            }
+        }
+    });
 });

@@ -619,12 +619,12 @@
   <!-- Checkout Modal -->
   <!-- Checkout Modal -->
 <div class="modal-backdrop" id="checkoutModal" aria-hidden="true">
-    <div class="modal-content" style="max-width:500px;">
+    <div class="modal-content" style="max-width:500px; max-height: 90vh;">
         <div class="modal-header">
             <h3 id="checkoutTitle">Purchase Beat</h3>
             <button class="modal-close" data-close>&times;</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="overflow-y: auto; max-height: 60vh;">
             <div id="checkoutBody">
                 <!-- Dynamic content will be inserted here -->
             </div>
@@ -655,142 +655,384 @@
 
 
   <div class="modal-backdrop" id="adminPanelModal" aria-hidden="true">
-    <div class="modal-content" style="max-width:900px;max-height:85vh;width:95vw;">
+    <div class="modal-content admin-modal">
         <div class="modal-header">
-            <h3>🎛️ Admin Panel - Purchase Keys</h3>
-            <button class="modal-close" data-close>&times;</button>
-        </div>
-        <div class="modal-body" style="padding:0;">
-            <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="generate">Generate Key</button>
-                <button class="admin-tab" data-tab="keys">View Keys</button>
-                <button class="admin-tab" data-tab="users">Users</button>
-                <button class="admin-tab" data-tab="stats">Stats</button>
+            <div class="modal-header-content">
+                <div class="modal-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 15v3m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="modal-title">
+                    <h3>Admin Dashboard</h3>
+                    <p class="modal-subtitle">Manage purchase keys and users</p>
+                </div>
             </div>
-            
-            <div class="admin-tab-content">
-                <!-- Generate Key Tab -->
-                <div id="generateTab" class="admin-tab-pane active">
-                    <div class="admin-form-section">
-                        <h4>Generate Purchase Key</h4>
-                        <div class="form-group">
-                            <label>Select Beat:</label>
-                            <select id="adminBeatSelect" class="form-control">
-                                <option value="">-- Select a beat --</option>
-                            </select>
+            <button class="modal-close" data-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="admin-container">
+            <!-- Sidebar Navigation -->
+            <nav class="admin-sidebar">
+                <div class="sidebar-header">
+                    <div class="user-badge">
+                        <div class="user-avatar">A</div>
+                        <div class="user-info">
+                            <span class="user-name">Admin</span>
+                            <span class="user-role">Administrator</span>
                         </div>
-                        
-                        <div class="form-group">
-                            <label>Select User:</label>
-                            <select id="adminUserSelect" class="form-control">
-                                <option value="">-- Select a user --</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Or Enter User Email:</label>
-                            <input type="email" id="adminUserEmail" class="form-control" 
-                                   placeholder="user@example.com">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Expiration Hours:</label>
-                            <input type="number" id="expirationHours" class="form-control" 
-                                   value="24" min="1" max="168">
-                            <small style="color:var(--muted);">Key will expire after this many hours</small>
-                        </div>
-                        
-                        <div class="form-actions" style="margin-top:20px;">
-                            <button class="btn" onclick="generatePurchaseKeyAdmin()" style="width:100%;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;">
-                                    <path d="M12 5v14M5 12h14"/>
-                                </svg>
-                                Generate Purchase Key
-                            </button>
-                        </div>
-                        
-                        <div id="keyResult" style="margin-top:20px;"></div>
                     </div>
                 </div>
                 
-                <!-- View Keys Tab -->
-                <div id="keysTab" class="admin-tab-pane">
-                    <div class="admin-tools">
-                        <input type="text" id="searchKeys" class="form-control" placeholder="Search keys..." 
-                               style="flex:1;" oninput="filterKeys()">
-                        <select id="keyStatusFilter" class="form-control" onchange="filterKeys()" style="width:150px;">
-                            <option value="">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="used">Used</option>
-                            <option value="expired">Expired</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                        <button class="btn secondary" onclick="refreshKeys()" style="white-space:nowrap;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M23 4v6h-6M1 20v-6h6"/>
-                                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-                            </svg>
-                            Refresh
-                        </button>
-                    </div>
+                <div class="sidebar-menu">
+                    <button class="sidebar-item active" data-tab="dashboard">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        <span>Dashboard</span>
+                    </button>
                     
-                    <div id="keysList" class="admin-list" style="max-height:400px;overflow-y:auto;">
-                        <div style="text-align:center;padding:40px 20px;color:var(--muted);">
-                            Loading purchase keys...
+                    <button class="sidebar-item" data-tab="keys">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                        </svg>
+                        <span>Keys Management</span>
+                    </button>
+                    
+                    <button class="sidebar-item" data-tab="generate">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <span>Generate Key</span>
+                    </button>
+                    
+                    <button class="sidebar-item" data-tab="users">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13-5.197a6 6 0 00-12 0"/>
+                        </svg>
+                        <span>Users</span>
+                    </button>
+                    
+                    <button class="sidebar-item" data-tab="settings">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>Settings</span>
+                    </button>
+                </div>
+                
+                <div class="sidebar-footer">
+                    <button class="sidebar-action">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                        </svg>
+                        <span>Log Out</span>
+                    </button>
+                </div>
+            </nav>
+            
+            <!-- Main Content Area -->
+            <main class="admin-main">
+                <!-- Dashboard Tab -->
+                <div class="admin-tab-content active" id="dashboardTab">
+                    <div class="tab-header">
+                        <h2>Dashboard Overview</h2>
+                        <div class="header-actions">
+                            <button class="btn secondary small" onclick="refreshStats()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                Refresh
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="pagination" id="keysPagination" style="margin-top:20px;"></div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(138, 43, 226, 0.1);">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8a2be2" stroke-width="2">
+                                    <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="totalKeys">0</h3>
+                                <p>Total Keys</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(255, 193, 7, 0.1);">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffc107" stroke-width="2">
+                                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="pendingKeys">0</h3>
+                                <p>Pending</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(40, 167, 69, 0.1);">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="usedKeys">0</h3>
+                                <p>Used</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(220, 53, 69, 0.1);">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2">
+                                    <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="expiredKeys">0</h3>
+                                <p>Expired</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-activity">
+                        <div class="activity-header">
+                            <h3>Recent Activity</h3>
+                            <button class="btn-link">View All</button>
+                        </div>
+                        <div id="recentPurchases" class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                    </svg>
+                                </div>
+                                <div class="activity-details">
+                                    <p>New purchase key generated</p>
+                                    <span class="activity-time">2 minutes ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Generate Key Tab -->
+                <div class="admin-tab-content" id="generateTab">
+                    <div class="tab-header">
+                        <h2>Generate Purchase Key</h2>
+                    </div>
+                    
+                    <div class="form-card">
+                        <form id="generateKeyForm">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Select Beat</label>
+                                    <select id="adminBeatSelect" class="form-control">
+                                        <option value="">Choose a beat...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Select User</label>
+                                    <select id="adminUserSelect" class="form-control">
+                                        <option value="">Choose a user...</option>
+                                    </select>
+                                    <small>Or enter email below</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>User Email</label>
+                                    <input type="email" id="adminUserEmail" class="form-control" 
+                                           placeholder="user@example.com">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Expiration Time</label>
+                                    <div class="expiration-controls">
+                                        <input type="number" id="expirationHours" class="form-control" 
+                                               value="24" min="1" max="168">
+                                        <span>hours</span>
+                                    </div>
+                                    <small class="hint">Key will expire after this duration</small>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn secondary" onclick="resetForm()">
+                                    Reset
+                                </button>
+                                <button type="button" class="btn primary" onclick="generatePurchaseKeyAdmin()">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Generate Key
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div id="keyResult" class="key-result" style="display: none;">
+                            <h4>Generated Key</h4>
+                            <div class="key-display">
+                                <code id="generatedKeyCode">ABC123-XYZ456-DEF789</code>
+                                <button class="btn-icon copy-btn" onclick="copyKey()">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Keys Management Tab -->
+                <div class="admin-tab-content" id="keysTab">
+                    <div class="tab-header">
+                        <h2>Keys Management</h2>
+                        <div class="header-actions">
+                            <div class="search-box">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                <input type="text" id="searchKeys" placeholder="Search keys..." oninput="filterKeys()">
+                            </div>
+                            <select id="keyStatusFilter" class="filter-select" onchange="filterKeys()">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="used">Used</option>
+                                <option value="expired">Expired</option>
+                            </select>
+                            <button class="btn secondary" onclick="refreshKeys()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Beat</th>
+                                    <th>User</th>
+                                    <th>Status</th>
+                                    <th>Expires</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keysTableBody">
+                                <!-- Keys will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="table-footer">
+                        <div class="table-info">
+                            Showing <span id="keysCount">0</span> keys
+                        </div>
+                        <div class="pagination" id="keysPagination">
+                            <!-- Pagination will be inserted here -->
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Users Tab -->
-                <div id="usersTab" class="admin-tab-pane">
-                    <div class="admin-tools">
-                        <input type="text" id="searchUsers" class="form-control" placeholder="Search users..." 
-                               style="flex:1;" oninput="filterUsers()">
-                        <select id="userRoleFilter" class="form-control" onchange="filterUsers()" style="width:150px;">
-                            <option value="">All Roles</option>
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                        </select>
+                <div class="admin-tab-content" id="usersTab">
+                    <div class="tab-header">
+                        <h2>Users Management</h2>
+                        <div class="header-actions">
+                            <div class="search-box">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                <input type="text" id="searchUsers" placeholder="Search users..." oninput="filterUsers()">
+                            </div>
+                            <select id="userRoleFilter" class="filter-select" onchange="filterUsers()">
+                                <option value="">All Roles</option>
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
                     </div>
                     
-                    <div id="usersList" class="admin-list" style="max-height:400px;overflow-y:auto;">
-                        <div style="text-align:center;padding:40px 20px;color:var(--muted);">
-                            Loading users...
-                        </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Purchases</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 
-                <!-- Stats Tab -->
-                <div id="statsTab" class="admin-tab-pane">
-                    <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:15px;margin-bottom:30px;">
-                        <div class="stat-card" style="background:var(--card-bg);padding:20px;border-radius:8px;text-align:center;border:1px solid var(--border);">
-                            <div class="stat-value" id="totalKeys" style="font-size:32px;font-weight:bold;color:var(--accent1);margin-bottom:5px;">0</div>
-                            <div class="stat-label" style="font-size:14px;color:var(--muted);">Total Keys</div>
-                        </div>
-                        <div class="stat-card" style="background:var(--card-bg);padding:20px;border-radius:8px;text-align:center;border:1px solid var(--border);">
-                            <div class="stat-value" id="pendingKeys" style="font-size:32px;font-weight:bold;color:#ffc107;margin-bottom:5px;">0</div>
-                            <div class="stat-label" style="font-size:14px;color:var(--muted);">Pending</div>
-                        </div>
-                        <div class="stat-card" style="background:var(--card-bg);padding:20px;border-radius:8px;text-align:center;border:1px solid var(--border);">
-                            <div class="stat-value" id="usedKeys" style="font-size:32px;font-weight:bold;color:#28a745;margin-bottom:5px;">0</div>
-                            <div class="stat-label" style="font-size:14px;color:var(--muted);">Used</div>
-                        </div>
-                        <div class="stat-card" style="background:var(--card-bg);padding:20px;border-radius:8px;text-align:center;border:1px solid var(--border);">
-                            <div class="stat-value" id="expiredKeys" style="font-size:32px;font-weight:bold;color:#dc3545;margin-bottom:5px;">0</div>
-                            <div class="stat-label" style="font-size:14px;color:var(--muted);">Expired</div>
-                        </div>
+                <!-- Settings Tab -->
+                <div class="admin-tab-content" id="settingsTab">
+                    <div class="tab-header">
+                        <h2>Settings</h2>
                     </div>
                     
-                    <div class="recent-activity" style="background:var(--card-bg);padding:20px;border-radius:8px;">
-                        <h4 style="margin:0 0 15px 0;">Recent Purchases</h4>
-                        <div id="recentPurchases">
-                            Loading recent purchases...
+                    <div class="settings-grid">
+                        <div class="settings-card">
+                            <h3>General Settings</h3>
+                            <div class="settings-group">
+                                <div class="setting-item">
+                                    <label>Default Key Expiration</label>
+                                    <select class="form-control">
+                                        <option value="24">24 hours</option>
+                                        <option value="48">48 hours</option>
+                                        <option value="72">72 hours</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <label>Enable Email Notifications</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-card">
+                            <h3>Security</h3>
+                            <div class="settings-group">
+                                <div class="setting-item">
+                                    <label>Require Admin Approval</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="setting-item">
+                                    <label>Session Timeout</label>
+                                    <select class="form-control">
+                                        <option value="30">30 minutes</option>
+                                        <option value="60">60 minutes</option>
+                                        <option value="120">2 hours</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 </div>
