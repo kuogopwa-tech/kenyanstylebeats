@@ -12,80 +12,6 @@ let allBeats = [];
 let currentSeries = 'all';
 let searchQuery = '';
 
-let adminPanelInitialized = false;
-let adminTabsInitialized = false;
-let usersLoaded = false;
-let currentAdminTab = null;
-
-// Mobile menu functionality
-const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-const mobileNavOverlay = document.getElementById('mobileNavOverlay');
-const mobileNav = document.getElementById('mobileNav');
-const mobileNavClose = document.getElementById('mobileNavClose');
-
-// Toggle mobile menu
-mobileMenuToggle?.addEventListener('click', () => {
-  mobileNav.classList.add('active');
-  mobileNavOverlay.classList.add('active');
-  document.body.style.overflow = 'hidden'; // Prevent scrolling
-});
-
-// Close mobile menu
-function closeMobileMenu() {
-  mobileNav.classList.remove('active');
-  mobileNavOverlay.classList.remove('active');
-  document.body.style.overflow = '';
-}
-
-mobileNavClose?.addEventListener('click', closeMobileMenu);
-mobileNavOverlay?.addEventListener('click', closeMobileMenu);
-
-// Close mobile menu on escape key
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && mobileNav.classList.contains('active')) {
-    closeMobileMenu();
-  }
-});
-
-// Sync desktop and mobile user states
-function syncUserStateToMobile(isLoggedIn, userData) {
-  const userDropdownMobile = document.getElementById('userDropdownMobile');
-  const userInitialMobile = document.getElementById('userInitialMobile');
-  const userEmailMobile = document.getElementById('userEmailMobile');
-  const signBtnMobile = document.getElementById('signBtnMobile');
-  
-  if (isLoggedIn && userData) {
-    userDropdownMobile.style.display = 'block';
-    signBtnMobile.style.display = 'none';
-    userInitialMobile.textContent = userData.name?.charAt(0).toUpperCase() || 'U';
-    userEmailMobile.textContent = userData.email || '';
-  } else {
-    userDropdownMobile.style.display = 'none';
-    signBtnMobile.style.display = 'flex';
-  }
-}
-
-// Mobile button event listeners
-document.getElementById('browseTopMobile')?.addEventListener('click', () => {
-  closeMobileMenu();
-  document.getElementById('browseTop')?.click();
-});
-
-document.getElementById('adminBtnMobile')?.addEventListener('click', () => {
-  closeMobileMenu();
-  document.getElementById('adminBtn')?.click();
-});
-
-document.getElementById('signBtnMobile')?.addEventListener('click', () => {
-  closeMobileMenu();
-  document.getElementById('signBtn')?.click();
-});
-
-// Close mobile menu when clicking on dropdown items
-document.querySelectorAll('.mobile-nav .dropdown-item').forEach(item => {
-  item.addEventListener('click', closeMobileMenu);
-});
-
 // ============================================
 // INITIALIZATION
 // ============================================
@@ -101,9 +27,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Then load beats with proper user permissions
         loadBeats();
     });
-
-     initAdminPanelButton();
-    setupAdminPanelNavigation(); 
     
     // Set current year in footer
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -117,7 +40,6 @@ async function checkAuthStatus() {
     if (!authToken) {
         console.log('🔐 No auth token found');
         updateUIForLoggedOutUser();
-        syncUserStateToMobile(false, null); // ✅ ADD THIS
         return;
     }
     
@@ -138,9 +60,6 @@ async function checkAuthStatus() {
                 
                 updateUIForLoggedInUser();
                 
-                // ✅ ADD THIS: Sync mobile UI
-                syncUserStateToMobile(true, data.user);
-                
                 // Refresh beats after successful auth check
                 if (document.getElementById('beatsGrid')) {
                     refreshBeatCards();
@@ -154,9 +73,6 @@ async function checkAuthStatus() {
             currentUser = null;
             updateUIForLoggedOutUser();
             
-            // ✅ ADD THIS: Sync mobile UI
-            syncUserStateToMobile(false, null);
-            
             // Refresh beats to remove delete buttons
             if (document.getElementById('beatsGrid')) {
                 refreshBeatCards();
@@ -168,9 +84,6 @@ async function checkAuthStatus() {
         authToken = null;
         currentUser = null;
         updateUIForLoggedOutUser();
-        
-        // ✅ ADD THIS: Sync mobile UI
-        syncUserStateToMobile(false, null);
         
         if (document.getElementById('beatsGrid')) {
             refreshBeatCards();
@@ -186,7 +99,7 @@ function updateUIForLoggedInUser() {
     const adminUsersBtn = document.getElementById('adminUsersBtn');
     const adminDivider = document.getElementById('adminDivider');
     const adminBtn = document.getElementById('adminBtn');
-    const adminPanelBtn = document.getElementById('adminPanelBtn');
+    const adminPanelBtn = document.getElementById('adminPanelBtn'); // Add this
     
     if (!signBtn || !userDropdown || !userInitial || !userEmail) return;
     
@@ -203,7 +116,7 @@ function updateUIForLoggedInUser() {
             if (adminUsersBtn) adminUsersBtn.style.display = 'block';
             if (adminDivider) adminDivider.style.display = 'block';
             if (adminBtn) adminBtn.style.display = 'inline-block';
-            if (adminPanelBtn) {
+            if (adminPanelBtn) { // Show admin panel button
                 adminPanelBtn.style.display = 'inline-flex';
                 adminPanelBtn.style.alignItems = 'center';
                 adminPanelBtn.style.gap = '6px';
@@ -213,15 +126,12 @@ function updateUIForLoggedInUser() {
             if (adminUsersBtn) adminUsersBtn.style.display = 'none';
             if (adminDivider) adminDivider.style.display = 'none';
             if (adminBtn) adminBtn.style.display = 'none';
-            if (adminPanelBtn) adminPanelBtn.style.display = 'none';
+            if (adminPanelBtn) adminPanelBtn.style.display = 'none'; // Hide admin panel button
         }
         
         // Update UI visibility
         signBtn.style.display = 'none';
         userDropdown.style.display = 'block';
-        
-        // ✅ ADD THIS: Sync mobile UI
-        syncUserStateToMobile(true, currentUser);
         
         // Force refresh beats to update delete buttons
         setTimeout(() => {
@@ -232,19 +142,17 @@ function updateUIForLoggedInUser() {
     }
 }
 
+// Also update updateUIForLoggedOutUser
 function updateUIForLoggedOutUser() {
     const signBtn = document.getElementById('signBtn');
     const userDropdown = document.getElementById('userDropdown');
     const adminBtn = document.getElementById('adminBtn');
-    const adminPanelBtn = document.getElementById('adminPanelBtn');
+    const adminPanelBtn = document.getElementById('adminPanelBtn'); // Add this
     
     if (signBtn) signBtn.style.display = 'block';
     if (userDropdown) userDropdown.style.display = 'none';
     if (adminBtn) adminBtn.style.display = 'none';
-    if (adminPanelBtn) adminPanelBtn.style.display = 'none';
-    
-    // ✅ ADD THIS: Sync mobile UI
-    syncUserStateToMobile(false, null);
+    if (adminPanelBtn) adminPanelBtn.style.display = 'none'; // Hide admin panel button
 }
 
 // Add modal close listener for admin panel
@@ -806,9 +714,13 @@ function showCheckoutModal(beatId) {
     if (!beat) return;
     
     const modal = document.getElementById('checkoutModal');
+    checkoutHideModal();
     const title = document.getElementById('checkoutTitle');
     const body = document.getElementById('checkoutBody');
     const footer = document.getElementById('checkoutFooter');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleCheckoutEscape);
     
     if (!modal || !title || !body || !footer) return;
     
@@ -822,21 +734,21 @@ function showCheckoutModal(beatId) {
     // Check if user is logged in
     if (!currentUser || !authToken) {
         body.innerHTML = `
-            <div style="text-align:center;padding:40px 20px;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1">
+            <div class="checkout-login-required">
+                <svg class="checkout-login-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                <h3 style="margin:20px 0 10px 0;">Sign In Required</h3>
-                <p style="color:var(--muted);margin-bottom:20px;">
+                <h3 class="checkout-login-title">Sign In Required</h3>
+                <p class="checkout-login-message">
                     Please sign in to make a purchase
                 </p>
             </div>
         `;
         
         footer.innerHTML = `
-            <button class="btn secondary" onclick="hideModal('checkoutModal')">Cancel</button>
-            <button class="btn" onclick="hideModal('checkoutModal'); showAuthModal();">Sign In</button>
+            <button class="checkout-btn-secondary" onclick="hideModal('checkoutModal')">Cancel</button>
+            <button class="checkout-whatsapp-button" onclick="hideModal('checkoutModal'); showAuthModal();">Sign In</button>
         `;
         
         modal.style.display = 'flex';
@@ -844,370 +756,245 @@ function showCheckoutModal(beatId) {
     }
     
     // Step 1: Show purchase info and WhatsApp contact
-  // Create optimized CSS
-const checkoutStyles = document.createElement('style');
-checkoutStyles.textContent = `
-/* Reset problematic inline styles */
-.checkout-step {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    width: 100% !important;
-    overflow: hidden !important;
-}
-
-/* Simple responsive layout */
-.main-content-row {
-    flex: 1 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    display: flex !important;
-    gap: 16px !important;
-    width: 100% !important;
-}
-
-/* Instructions column - scrollable content only */
-.instructions-column {
-    flex: 1 !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-}
-
-/* Container for instructions with scroll */
-.instructions-container {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-}
-
-// Update the scrollable steps section to remove top margin:
-.scrollable-steps {
-    flex: 1 !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    padding-right: 8px !important;
-    margin-top: 0 !important; /* Add this line */
-    padding-top: 0 !important; /* Add this line */
-}
-
-// Also make sure the instructions header doesn't add extra margin below:
-.instructions-container > div:first-child {
-    margin-bottom: 16px !important;
-}
-/* Actions column - fixed width, scroll if needed */
-.actions-column {
-    flex: 0 0 300px !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    max-height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 16px !important;
-}
-
-/* Beat card - always stays at top */
-.beat-info-card {
-    flex-shrink: 0 !important;
-}
-
-/* Bottom actions - always at bottom */
-.bottom-actions {
-    flex-shrink: 0 !important;
-    margin-top: auto !important;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-    .main-content-row {
-        flex-direction: column !important;
-        gap: 12px !important;
-    }
-    
-    .instructions-column {
-        flex: 1 !important;
-        min-height: 300px !important;
-    }
-    
-    .actions-column {
-        flex: 0 0 auto !important;
-        width: 100% !important;
-        max-height: 40vh !important;
-    }
-    
-    .beat-tags {
-        flex-wrap: wrap !important;
-    }
-}
-
-@media (max-width: 480px) {
-    .checkout-modal-content {
-        margin: 8px !important;
-        width: calc(100% - 16px) !important;
-        max-height: 95vh !important;
-    }
-    
-    .beat-info-header {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 12px !important;
-    }
-    
-    .price-display {
-        align-self: flex-start !important;
-    }
-    
-    .step-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
-
-/* Prevent text overflow */
-.beat-title {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-}
-
-/* Smooth scrolling */
-.scrollable-steps::-webkit-scrollbar {
-    width: 4px;
-}
-
-.scrollable-steps::-webkit-scrollbar-thumb {
-    background: var(--accent1);
-    border-radius: 2px;
-}
-`;
-
-document.head.appendChild(checkoutStyles);
-
-// Now create the HTML with minimal inline styles and proper classes
-body.innerHTML = `
-    <div class="checkout-step" id="checkoutStep1">
-        <!-- Beat Information Card -->
-        <div class="beat-info-card" style="background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-secondary) 100%); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 12px;">
-                <div style="flex: 1; min-width: 0;">
-                    <h3 class="beat-title" style="margin: 0 0 8px 0; color: var(--text); font-size: 1.1rem; line-height: 1.3;">${beat.title}</h3>
-                    <div class="beat-tags" style="display: flex; gap: 8px; margin-bottom: 10px;">
-                        <span style="background: var(--accent1-opaque); color: var(--accent1); padding: 3px 10px; border-radius: 16px; font-size: 11px; font-weight: 500;">${beat.series}</span>
-                        <span style="background: rgba(138, 43, 226, 0.1); color: #8a2be2; padding: 3px 10px; border-radius: 16px; font-size: 11px; font-weight: 500;">${beat.fileType}</span>
-                        <span style="background: rgba(108, 117, 125, 0.1); color: var(--muted); padding: 3px 10px; border-radius: 16px; font-size: 11px; font-weight: 500;">By: ${beat.uploadedBy?.name || 'Unknown'}</span>
+    body.innerHTML = `
+        <div class="checkout-step" id="checkoutStep1">
+            <!-- Beat Information Card -->
+            <div class="checkout-beat-info-card">
+                <div class="checkout-beat-header">
+                    <div class="checkout-beat-details">
+                        <h3 class="checkout-beat-title">${beat.title}</h3>
+                        <div class="checkout-beat-tags">
+                            <span class="checkout-tag checkout-tag-series">${beat.series}</span>
+                            <span class="checkout-tag checkout-tag-filetype">${beat.fileType}</span>
+                            <span class="checkout-tag checkout-tag-uploader">By: ${beat.uploadedBy?.name || 'Unknown'}</span>
+                        </div>
+                    </div>
+                    <div class="checkout-price-display">
+                        <div class="checkout-price-label">PRICE</div>
+                        <div class="checkout-price-value">${formattedPrice}</div>
                     </div>
                 </div>
-                <div style="background: var(--accent1); color: white; padding: 10px 16px; border-radius: 10px; text-align: center; min-width: 100px; flex-shrink: 0;">
-                    <div style="font-size: 10px; opacity: 0.9; margin-bottom: 3px;">PRICE</div>
-                    <div style="font-size: 1.3rem; font-weight: 700; line-height: 1;">${formattedPrice}</div>
+                
+                <div class="checkout-beat-footer">
+                    <div class="checkout-timer-info">
+                        <svg class="checkout-timer-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>Complete purchase in 2-5 minutes</span>
+                    </div>
                 </div>
             </div>
             
-            <div style="border-top: 1px solid var(--border); padding-top: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span>Complete purchase in 2-5 minutes</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Main Content Area -->
-        <div class="main-content-row">
-            <!-- Left Column - Instructions -->
-            <div class="instructions-column">
-                <div class="instructions-container" style="background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border);">
-                    <div style="flex-shrink: 0; margin-bottom: 16px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; flex-shrink: 0;">1</div>
-                            <div style="flex: 1; min-width: 0;">
-                                <h4 style="margin: 0 0 4px 0; color: var(--text); font-size: 1.1rem; line-height: 1.3;">Purchase Instructions</h4>
-                                <p style="margin: 0; color: var(--muted); font-size: 13px; line-height: 1.3;">Follow these steps to get your beat</p>
+            <!-- Main Content Area -->
+            <div class="checkout-main-content">
+                <!-- Left Column - Instructions -->
+                <div class="checkout-instructions-column">
+                    <div class="checkout-instructions-container">
+                        <div class="checkout-instructions-header">
+                            <div class="checkout-instructions-header-inner">
+                                <div class="checkout-instructions-number">1</div>
+                                <div class="checkout-instructions-title-block">
+                                    <h4 class="checkout-instructions-title">Purchase Instructions</h4>
+                                    <p class="checkout-instructions-subtitle">Follow these steps to get your beat</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Scrollable Steps Content -->
+                        <div class="checkout-scrollable-steps">
+                            <!-- Steps Grid -->
+                            <div class="checkout-steps-grid">
+                                ${generateStepsHTML(currentUser.email)}
+                            </div>
+                            
+                            <!-- Important Info Box -->
+                            <div class="checkout-info-box">
+                                ${generateInfoBoxHTML()}
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Scrollable Steps Content -->
-                    <div class="scrollable-steps">
-                        <!-- Steps Grid -->
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-bottom: 16px;">
-                            ${generateStepsHTML(currentUser.email)}
-                        </div>
-                        
-                        <!-- Important Info Box -->
-                        <div style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%); border: 2px solid rgba(255, 193, 7, 0.3); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
-                            ${generateInfoBoxHTML()}
-                        </div>
-                    </div>
+                </div>
+                
+                <!-- Right Column - Actions -->
+                <div class="checkout-actions-column">
+                    ${generateActionsHTML(beat, currentUser.email, formattedPrice, beatId)}
                 </div>
             </div>
             
-            <!-- Right Column - Actions -->
-            <div class="actions-column">
-                ${generateActionsHTML(beat, currentUser.email, formattedPrice, beatId)}
-            </div>
-        </div>
-        
-        <!-- Bottom Actions -->
-        <div class="bottom-actions" style="padding-top: 16px; border-top: 1px solid var(--border);">
-            <div style="display: flex; gap: 12px;">
-                <button onclick="hideModal('checkoutModal')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: 500; font-size: 14px; background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); cursor: pointer;">
-                    Cancel
-                </button>
-                <button onclick="checkMyPurchases()" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: 500; font-size: 14px; background: var(--card-bg); color: var(--text); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="8.5" cy="7" r="4"></circle>
-                        <line x1="20" y1="8" x2="20" y2="14"></line>
-                        <line x1="23" y1="11" x2="17" y2="11"></line>
-                    </svg>
-                    My Purchases
-                </button>
-            </div>
-        </div>
-    </div>
-`;
-
-// Helper functions to break up the HTML
-function generateStepsHTML(email) {
-    const steps = [
-        { num: 1, title: "Contact on WhatsApp", desc: `Click WhatsApp button to message the seller.`, color: "var(--accent1)" },
-       // { num: 2, title: "Confirm Your Email", desc: `Share this email with the seller:<br><strong style="color: var(--text); font-size: 13px; display: inline-block; margin-top: 4px; padding: 4px 8px; background: var(--card-bg); border-radius: 4px; border: 1px solid var(--border);">${email}</strong>`, color: "#8a2be2" },
-        { num: 2, title: "Complete Payment", desc: "Pay via seller's whatsapp number. Confirm payment with seller.", color: "#28a745" },
-        { num: 3, title: "Receive Purchase Key", desc: 'Get unique key via WhatsApp. Example format: <code style="font-family: monospace; color: #ffc107;">BKT-7X92-3F8A-1C5D</code>', color: "#ffc107" }
-    ];
-    
-    return steps.map(step => `
-        <div style="background: var(--bg-secondary); padding: 16px; border-radius: 10px; border-left: 4px solid ${step.color};">
-            <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <div style="background: ${step.color}20; color: ${step.color}; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold; font-size: 14px;">
-                    ${step.num}
-                </div>
-                <div style="flex: 1; min-width: 0;">
-                    <h5 style="margin: 0 0 8px 0; color: var(--text); font-size: 0.95rem;">${step.title}</h5>
-                    <p style="margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4;">${step.desc}</p>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function generateInfoBoxHTML() {
-    return `
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-            <div style="background: #ffc107; color: #856404; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#856404" stroke-width="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                    <line x1="12" y1="9" x2="12" y2="13"></line>
-                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-            </div>
-            <h5 style="margin: 0; color: #856404; font-size: 0.95rem; font-weight: 600;">Important Information</h5>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 6px; height: 6px; background: #28a745; border-radius: 50%; flex-shrink: 0;"></div>
-                <span style="color: var(--text); font-size: 12px; font-weight: 500;">Keys are linked to your account</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 6px; height: 6px; background: #dc3545; border-radius: 50%; flex-shrink: 0;"></div>
-                <span style="color: var(--text); font-size: 12px; font-weight: 500;">One-time use only</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 6px; height: 6px; background: #17a2b8; border-radius: 50%; flex-shrink: 0;"></div>
-                <span style="color: var(--text); font-size: 12px; font-weight: 500;">Valid for 24 hours after generation</span>
-            </div>
-        </div>
-    `;
-}
-
-function generateActionsHTML(beat, email, price, beatId) {
-    const whatsappNumber = getWhatsAppNumber(beat.uploadedBy?.whatsapp);
-    const whatsappMessage = encodeURIComponent(`Hello! I want to purchase "${beat.title}" (${price}). My email is: ${email}`);
-    
-    return `
-        <!-- WhatsApp Action Card -->
-        <div style="background: linear-gradient(135deg, var(--card-bg) 0%, rgba(37, 211, 102, 0.05) 100%); border-radius: 12px; padding: 20px; border: 1px solid rgba(37, 211, 102, 0.2); text-align: center;">
-            <div style="margin-bottom: 16px;">
-                <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.150-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.130-.606.134-.133.298-.347.446-.520.149-.174.198-.298.298-.497.099-.198.050-.371-.025-.520-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.500-.669-.510-.173-.008-.371-.010-.57-.010-.198 0-.520.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.200 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.76.982.998-3.675-.236-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.826 9.86 0 0 1 2.9 6.994c-.004 5.45-4.438 9.88-9.888 9.88m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.333 .157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.892 0-3.18-1.24-6.162-3.495-8.411"/>
-                    </svg>
-                </div>
-                <h4 style="margin: 0 0 6px 0; color: var(--text); font-size: 1.1rem;">Start Purchase</h4>
-                <p style="margin: 0; color: var(--muted); font-size: 13px; line-height: 1.3;">
-                    Contact seller directly via WhatsApp
-                </p>
-            </div>
-            
-            <a href="https://wa.me/${whatsappNumber}?text=${whatsappMessage}" 
-               target="_blank" 
-               style="display: block; width: 100%; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 14px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); border: none; cursor: pointer; margin-bottom: 12px;">
-                Contact on WhatsApp
-            </a>
-        </div>
-        
-        <!-- Key Entry Card -->
-        <div style="background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); text-align: center;">
-            <div style="margin-bottom: 16px;">
-                <div style="width: 48px; height: 48px; background: white; border: 2px solid var(--accent1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent1)" stroke-width="2">
-                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
-                    </svg>
-                </div>
-                <h5 style="margin: 0 0 6px 0; color: var(--text); font-size: 1rem;">Already Have Key?</h5>
-                <p style="margin: 0; color: var(--muted); font-size: 12px; line-height: 1.3;">
-                    Enter purchase key to download instantly
-                </p>
-            </div>
-            
-            <button onclick="showKeyInputStep('${beatId}')"
-                    style="width: 100%; background: white; color: var(--text); padding: 12px; border-radius: 10px; border: 2px solid var(--accent1); font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(138, 43, 226, 0.1);">
-                Enter Purchase Key
-            </button>
-        </div>
-        
-        <!-- User Info Card -->
-        <div style="background: var(--bg-secondary); border-radius: 12px; padding: 16px; border: 1px solid var(--border); margin-top: auto;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent1)" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <div style="flex: 1; min-width: 0;">
-                    <div style="color: var(--text); font-size: 12px; font-weight: 500; margin-bottom: 4px;">Logged in as</div>
-                    <div style="color: var(--accent1); font-weight: 600; font-size: 12px; word-break: break-all; line-height: 1.3;">
-                        ${email}
-                    </div>
+            <!-- Bottom Actions -->
+            <div class="checkout-bottom-actions">
+                <div class="checkout-bottom-buttons">
+                    <button class="checkout-btn-secondary" onclick="hideModal('checkoutModal')">
+                        Cancel
+                    </button>
+                    <button class="checkout-btn-purchases" onclick="checkMyPurchases()">
+                        <svg class="checkout-purchases-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="8.5" cy="7" r="4"></circle>
+                            <line x1="20" y1="8" x2="20" y2="14"></line>
+                            <line x1="23" y1="11" x2="17" y2="11"></line>
+                        </svg>
+                        My Purchases
+                    </button>
                 </div>
             </div>
         </div>
     `;
+
+    // Helper functions
+    function generateStepsHTML(email) {
+        const steps = [
+            { num: 1, title: "Contact on WhatsApp", desc: `Click WhatsApp button to message the seller.`, color: "var(--accent1)" },
+            { num: 2, title: "Complete Payment", desc: "Pay via seller's whatsapp number. Confirm payment with seller.", color: "#28a745" },
+            { num: 3, title: "Receive Purchase Key", desc: 'Get unique key via WhatsApp. Example format: <code class="checkout-key-example">BKT-7X92-3F8A-1C5D</code>', color: "#ffc107" }
+        ];
+        
+        return steps.map(step => `
+            <div class="checkout-step-card" style="border-left-color: ${step.color};">
+                <div class="checkout-step-card-inner">
+                    <div class="checkout-step-number" style="background: ${step.color}20; color: ${step.color};">
+                        ${step.num}
+                    </div>
+                    <div class="checkout-step-content">
+                        <h5 class="checkout-step-title">${step.title}</h5>
+                        <p class="checkout-step-desc">${step.desc}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function generateInfoBoxHTML() {
+        return `
+            <div class="checkout-info-header">
+                <div class="checkout-info-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#856404" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <h5 class="checkout-info-title">Important Information</h5>
+            </div>
+            <div class="checkout-info-points">
+                <div class="checkout-info-point">
+                    <div class="checkout-info-bullet" style="background: #28a745;"></div>
+                    <span class="checkout-info-text">Keys are linked to your account</span>
+                </div>
+                <div class="checkout-info-point">
+                    <div class="checkout-info-bullet" style="background: #dc3545;"></div>
+                    <span class="checkout-info-text">One-time use only</span>
+                </div>
+                <div class="checkout-info-point">
+                    <div class="checkout-info-bullet" style="background: #17a2b8;"></div>
+                    <span class="checkout-info-text">Valid for 24 hours after generation</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function generateActionsHTML(beat, email, price, beatId) {
+        const whatsappNumber = getWhatsAppNumber(beat.uploadedBy?.whatsapp);
+        const whatsappMessage = encodeURIComponent(`Hello! I want to purchase "${beat.title}" (${price}). My email is: ${email}`);
+        
+        return `
+            <!-- WhatsApp Action Card -->
+            <div class="checkout-whatsapp-card">
+                <div class="checkout-whatsapp-header">
+                    <div class="checkout-whatsapp-icon">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.130-.606.134-.133.298-.347.446-.520.149-.174.198-.298.298-.497.099-.198.050-.371-.025-.520-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.500-.669-.510-.173-.008-.371-.010-.57-.010-.198 0-.520.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.200 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.76.982.998-3.675-.236-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.826 9.86 0 0 1 2.9 6.994c-.004 5.45-4.438 9.88-9.888 9.88m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.333 .157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.892 0-3.18-1.24-6.162-3.495-8.411"/>
+                        </svg>
+                    </div>
+                    <h4 class="checkout-whatsapp-title">Start Purchase</h4>
+                    <p class="checkout-whatsapp-subtitle">
+                        Contact seller directly via WhatsApp
+                    </p>
+                </div>
+                
+                <a href="https://wa.me/${whatsappNumber}?text=${whatsappMessage}" 
+                   target="_blank" 
+                   class="checkout-whatsapp-button">
+                    Contact on WhatsApp
+                </a>
+            </div>
+            
+            <!-- Key Entry Card -->
+            <div class="checkout-key-card">
+                <div class="checkout-key-header">
+                    <div class="checkout-key-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent1)" stroke-width="2">
+                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                        </svg>
+                    </div>
+                    <h5 class="checkout-key-title">Already Have Key?</h5>
+                    <p class="checkout-key-subtitle">
+                        Enter purchase key to download instantly
+                    </p>
+                </div>
+                
+                <button onclick="showKeyInputStep('${beatId}')"
+                        class="checkout-key-button">
+                    Enter Purchase Key
+                </button>
+            </div>
+            
+            <!-- User Info Card -->
+            <div class="checkout-user-info">
+                <div class="checkout-user-header">
+                    <svg class="checkout-user-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent1)" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <div class="checkout-user-details">
+                        <div class="checkout-user-label">Logged in as</div>
+                        <div class="checkout-user-email">
+                            ${email}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
 }
 
-// Set modal to proper height constraints
-modal.style.display = 'flex';
-modal.setAttribute('aria-hidden', 'false');
-
-const modalContent = modal.querySelector('.modal-content');
-if (modalContent) {
-    modalContent.style.height = '85vh';
-    modalContent.style.maxHeight = '700px';
-    modalContent.style.minHeight = '500px';
-    modalContent.style.display = 'flex';
-    modalContent.style.flexDirection = 'column';
-    modalContent.style.width = '95%';
-    modalContent.style.maxWidth = '1000px';
+function checkoutHideModal() {
+    const modal = document.getElementById('checkoutModal');
+    const body = document.getElementById('checkoutBody');
+    const footer = document.getElementById('checkoutFooter');
+    
+    // Clean up the content
+    if (body) body.innerHTML = '';
+    if (footer) footer.innerHTML = '';
+    
+    // Remove any event listeners that might be lingering
+    document.removeEventListener('keydown', handleCheckoutEscape);
+    
+    // Hide modal
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    
+    // Reset any global modal state variables
+    window.currentCheckoutStep = 1;
 }
+
+// Separate escape handler for checkout modal
+function handleCheckoutEscape(e) {
+    if (e.key === 'Escape') {
+        checkoutHideModal();
+    }
 }
 
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        checkoutHideModal();
+    }
+});
 // Show key input step
 // Show key input step - FIXED VERSION
 function showKeyInputStep(beatId) {
@@ -1216,29 +1003,45 @@ function showKeyInputStep(beatId) {
     
     if (!body || !footer) return;
     
+    // Clear any existing content and listeners
+    body.innerHTML = '';
+    footer.innerHTML = '';
+    
+    // Store the current beatId globally for navigation
+    window.currentBeatId = beatId;
+    
     body.innerHTML = `
-        <div class="checkout-step" id="checkoutStep2">
-            <div class="purchase-instructions" style="margin-bottom:20px;">
-                <h4>Enter Purchase Key</h4>
-                <p>Enter the purchase key you received from the seller after making payment.</p>
+        <div class="checkout-key-input-step">
+            <!-- Instructions Section -->
+            <div class="checkout-step-header" style="margin-bottom: 1.5rem;">
+                <h3 class="checkout-step-title" style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text);">
+                    Enter Purchase Key
+                </h3>
+                <p class="checkout-step-subtitle" style="color: var(--muted); font-size: 0.9375rem; line-height: 1.5;">
+                    Enter the purchase key you received from the seller after making payment.
+                </p>
             </div>
             
-            <div class="key-input-section">
-                <label style="display:block;margin-bottom:8px;color:var(--text);font-weight:500;">
-                    Purchase Key:
+            <!-- Key Input Section -->
+            <div class="checkout-key-input-container">
+                <label class="checkout-input-label">
+                    Purchase Key
                 </label>
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;">
+                
+                <div class="checkout-input-group">
                     <input type="text" 
                            id="purchaseKeyInput" 
                            placeholder="Enter your purchase key (e.g., EMP-ABC123XYZ)"
-                           style="flex:1;padding:12px 15px;border:1px solid var(--border);border-radius:6px;background:var(--input-bg);color:var(--text);font-family:monospace;letter-spacing:1px;"
-                           maxlength="20">
-                    <button class="btn secondary" onclick="clearKeyInput()">
+                           class="checkout-key-input"
+                           maxlength="20"
+                           autocomplete="off"
+                           spellcheck="false">
+                    <button class="checkout-clear-btn" onclick="clearKeyInput()">
                         Clear
                     </button>
                 </div>
                 
-                <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);">
+                <div class="checkout-key-hint">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="16" x2="12" y2="12"></line>
@@ -1248,37 +1051,63 @@ function showKeyInputStep(beatId) {
                 </div>
             </div>
             
-            <div id="keyVerificationStatus" style="margin-top:20px;"></div>
+            <!-- Verification Status -->
+            <div id="keyVerificationStatus" class="checkout-status-container"></div>
         </div>
     `;
     
-    // Update footer with event listener, NOT onclick attribute
+    // Update footer
     footer.innerHTML = `
-        <button class="btn secondary" onclick="showCheckoutModal('${beatId}')">
-            ← Back
-        </button>
-        <button class="btn" id="verifyDownloadBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-            Verify & Download
-        </button>
+        <div class="checkout-key-input-footer">
+            <button class="checkout-back-btn" onclick="goBackToCheckout()">
+                ← Back to Checkout
+            </button>
+            <button class="checkout-verify-btn" id="verifyDownloadBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Verify & Download
+            </button>
+        </div>
     `;
     
-    // Add event listener to the new button
-    setTimeout(() => {
-        const verifyBtn = document.getElementById('verifyDownloadBtn');
-        if (verifyBtn) {
-            verifyBtn.addEventListener('click', verifyAndDownloadPurchaseKey);
-        }
-    }, 100);
+    // Add event listener properly
+    const verifyBtn = document.getElementById('verifyDownloadBtn');
+    if (verifyBtn) {
+        // Remove any existing listeners
+        verifyBtn.replaceWith(verifyBtn.cloneNode(true));
+        const newVerifyBtn = document.getElementById('verifyDownloadBtn');
+        newVerifyBtn.addEventListener('click', verifyAndDownloadPurchaseKey);
+    }
     
     // Focus on input
     setTimeout(() => {
         const input = document.getElementById('purchaseKeyInput');
-        if (input) input.focus();
+        if (input) {
+            input.focus();
+            // Auto-select text if there's any
+            input.select();
+        }
     }, 100);
+}
+
+// Helper function to go back
+function goBackToCheckout() {
+    if (window.currentBeatId) {
+        showCheckoutModal(window.currentBeatId);
+    } else {
+        checkoutHideModal();
+    }
+}
+
+// Clear key input function
+function clearKeyInput() {
+    const input = document.getElementById('purchaseKeyInput');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
 }
 
 // Combined Verify & Download function
@@ -2421,9 +2250,6 @@ async function adminLogin() {
             
             updateUIForLoggedInUser();
             
-            // ✅ ADD THIS: Sync mobile UI
-            syncUserStateToMobile(true, data.user);
-            
             document.getElementById('adminLoginView').style.display = 'none';
             document.getElementById('adminUploader').style.display = 'block';
             
@@ -2445,6 +2271,7 @@ async function adminLogin() {
         adminLoginBtn.disabled = false;
     }
 }
+
 function adminLogout() {
     const modal = document.getElementById('adminModal');
     if (modal) {
@@ -2681,9 +2508,6 @@ async function loginUser() {
             
             // Update UI with new admin status
             updateUIForLoggedInUser();
-            
-            // ✅ ADD THIS: Sync mobile UI
-            syncUserStateToMobile(true, data.user);
             
             // CRITICAL: Reload beats to show/hide delete buttons based on new role
             await loadBeats();
@@ -3042,9 +2866,6 @@ async function logout() {
         currentUser = null;
         
         updateUIForLoggedOutUser();
-        
-        // ✅ ADD THIS: Sync mobile UI
-        syncUserStateToMobile(false, null);
         
         // Refresh beats to remove delete buttons
         refreshBeatCards();
@@ -3436,7 +3257,6 @@ console.log('✅ EMPIRE BEATSTORE script loaded successfully!');
 // ============================================
 
 // Initialize admin panel button
-// Replace your existing initAdminPanelButton function with this:
 function initAdminPanelButton() {
     const adminPanelBtn = document.getElementById('adminPanelBtn');
     
@@ -3445,15 +3265,8 @@ function initAdminPanelButton() {
         return;
     }
     
-    // Remove any existing event listeners first
-    const newBtn = adminPanelBtn.cloneNode(true);
-    adminPanelBtn.parentNode.replaceChild(newBtn, adminPanelBtn);
-    
-    // Get fresh reference
-    const freshBtn = document.getElementById('adminPanelBtn');
-    
     // Add click event listener
-    freshBtn.addEventListener('click', function(e) {
+    adminPanelBtn.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
         
@@ -3485,7 +3298,32 @@ function initAdminPanelButton() {
     console.log('✅ Admin panel button initialized');
 }
 
-
+// Show admin panel
+function showAdminPanel() {
+    console.log('🎛️ Showing admin panel...');
+    
+    const modal = document.getElementById('adminPanelModal');
+    if (!modal) {
+        console.log('❌ Admin panel modal not found');
+        showToast('Admin panel not available', 'error');
+        return;
+    }
+    
+    // Load data for admin panel
+    loadAdminPanelData();
+    
+    // Show modal
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    
+    // Setup tab switching
+    setupAdminTabs();
+    
+    // Start with first tab
+    switchAdminTab('generate');
+    
+    console.log('✅ Admin panel displayed');
+}
 
 // Load admin stats
 async function loadAdminStats() {
@@ -3600,145 +3438,54 @@ async function loadAdminPanelData() {
 }
 
 // Setup admin tabs
-// Fixed admin tab switching - SIMPLE VERSION
-// Replace your existing setupAdminTabs function with this:
 function setupAdminTabs() {
-    if (adminTabsInitialized) {
-        console.log('⚠️ Admin tabs already initialized, skipping...');
+    const tabs = document.querySelectorAll('.admin-tab');
+    
+    if (!tabs.length) {
+        console.log('❌ No admin tabs found');
         return;
     }
     
-    console.log('🔧 Setting up admin tabs...');
-    adminTabsInitialized = true;
-    
-    // Remove all existing event listeners first
-    const sidebarItems = document.querySelectorAll('.sidebar-item[data-tab]');
-    
-    sidebarItems.forEach(item => {
-        // Clone and replace to remove old event listeners
-        const newItem = item.cloneNode(true);
-        item.parentNode.replaceChild(newItem, item);
-    });
-    
-    // Get fresh references
-    const freshItems = document.querySelectorAll('.sidebar-item[data-tab]');
-    
-    freshItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
+    tabs.forEach(tab => {
+        // Remove existing listeners to prevent duplicates
+        const newTab = tab.cloneNode(true);
+        tab.parentNode.replaceChild(newTab, tab);
+        
+        newTab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
             console.log(`📑 Switching to admin tab: ${tabId}`);
             switchAdminTab(tabId);
         });
     });
     
-    console.log(`✅ Admin tabs initialized (${freshItems.length} tabs found)`);
-}
-
-// Handle ALL admin panel navigation clicks
-function setupAdminPanelNavigation() {
-    console.log('🔧 Setting up admin panel navigation...');
-    
-    // Handle sidebar navigation
-    document.addEventListener('click', function(e) {
-        // Check if clicked on sidebar item
-        const sidebarItem = e.target.closest('.sidebar-item[data-tab]');
-        if (sidebarItem) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const tabId = sidebarItem.getAttribute('data-tab');
-            console.log(`📑 Sidebar click: Switching to ${tabId} tab`);
-            switchAdminTab(tabId);
-            return;
-        }
-        
-        // Handle close button
-        const closeBtn = e.target.closest('.modal-close[data-close]');
-        if (closeBtn && document.getElementById('adminPanelModal').style.display === 'flex') {
-            e.preventDefault();
-            closeAdminPanel();
-            return;
-        }
-        
-        // Handle logout button in sidebar
-        const logoutBtn = e.target.closest('.sidebar-action');
-        if (logoutBtn) {
-            e.preventDefault();
-            logout();
-            closeAdminPanel();
-            return;
-        }
-    });
-    
-    // Handle keyboard navigation
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('adminPanelModal').style.display === 'flex') {
-            closeAdminPanel();
-        }
-    });
+    console.log('✅ Admin tabs initialized');
 }
 
 // Switch admin tab
-// Switch admin tab - FIXED VERSION
-// Update switchAdminTab function for users tab
-// Replace your existing switchAdminTab function with this:
 function switchAdminTab(tabId) {
-    // Don't re-switch to same tab
-    if (currentAdminTab === tabId) {
-        console.log(`⚠️ Already on ${tabId} tab, skipping...`);
-        return;
-    }
-    
-    console.log(`🔄 Switching to tab: ${tabId}`);
-    currentAdminTab = tabId;
-    
-    // Update active sidebar item
-    document.querySelectorAll('.sidebar-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.tab === tabId);
+    // Update active tab
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabId);
     });
     
-    // Show active content tab
-    document.querySelectorAll('.admin-tab-content').forEach(pane => {
+    // Show active pane
+    document.querySelectorAll('.admin-tab-pane').forEach(pane => {
         pane.classList.toggle('active', pane.id === tabId + 'Tab');
     });
     
     // Load specific data for tab if needed
     switch(tabId) {
-        case 'dashboard':
-            console.log('📊 Loading dashboard...');
-            if (typeof loadAdminStats === 'function') {
-                loadAdminStats();
-            }
-            break;
-            
         case 'keys':
             console.log('🔑 Loading purchase keys...');
-            if (typeof loadPurchaseKeys === 'function') {
-                loadPurchaseKeys();
-            }
+            loadPurchaseKeys();
             break;
-            
-        case 'generate':
-            console.log('🔑 Loading generate tab...');
-            if (typeof loadBeatsForAdmin === 'function') {
-                loadBeatsForAdmin();
-            }
+        case 'stats':
+            console.log('📊 Loading stats...');
+            loadAdminStats();
             break;
-            
         case 'users':
             console.log('👥 Loading users...');
-            // Reset usersLoaded flag when switching to users tab
-            usersLoaded = false;
-            if (typeof loadUsersForAdmin === 'function') {
-                loadUsersForAdmin();
-            }
-            break;
-            
-        case 'settings':
-            console.log('⚙️ Loading settings...');
+            loadUsersForAdmin();
             break;
     }
 }
@@ -3814,17 +3561,10 @@ async function loadBeatsForAdmin() {
 }
 
 // Load users for admin
-// Replace your existing loadUsersForAdmin function with this:
 async function loadUsersForAdmin() {
-    // Prevent loading multiple times
-    if (usersLoaded) {
-        console.log('⚠️ Users already loaded, skipping...');
-        return;
-    }
-    
-    console.log('📡 Loading users for admin...');
-    
     try {
+        console.log('📡 Loading users for admin...');
+        
         const response = await fetch(`${API_BASE_URL}/auth/users`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
@@ -3835,12 +3575,10 @@ async function loadUsersForAdmin() {
         
         if (data.success) {
             window.allUsers = data.users || [];
-            
-            // Mark as loaded BEFORE displaying
-            usersLoaded = true;
+            const select = document.getElementById('adminUserSelect');
+            const usersList = document.getElementById('usersList');
             
             // Update dropdown
-            const select = document.getElementById('adminUserSelect');
             if (select) {
                 select.innerHTML = '<option value="">-- Select a user --</option>';
                 data.users.forEach(user => {
@@ -3852,7 +3590,6 @@ async function loadUsersForAdmin() {
             }
             
             // Update users list
-            const usersList = document.getElementById('usersList');
             if (usersList) {
                 displayUsers(data.users);
             }
@@ -3866,232 +3603,70 @@ async function loadUsersForAdmin() {
 }
 
 // Display users in admin panel
-// Display users in admin panel - CORRECTED VERSION
-// Display users in admin panel - FIXED VERSION
-// REPLACE your displayUsers function with this:
 function displayUsers(users) {
-    console.log('👥 Displaying users called with:', users?.length || 0, 'users');
-    
-    // DEBUG: Check what's in the users array
-    console.log('🔍 Users data:', users);
-    
-    // Try multiple ways to find the table body
-    let tableBody = null;
-    
-    // Try by ID first
-    tableBody = document.getElementById('usersTableBody');
-    console.log('🔍 By ID (usersTableBody):', tableBody ? 'Found' : 'Not found');
-    
-    // If not found, try finding any tbody in usersTab
-    if (!tableBody) {
-        const usersTab = document.getElementById('usersTab');
-        if (usersTab) {
-            tableBody = usersTab.querySelector('tbody');
-            console.log('🔍 By querySelector in usersTab:', tableBody ? 'Found' : 'Not found');
-        }
-    }
-    
-    // If still not found, check ALL tbodies
-    if (!tableBody) {
-        const allTbodies = document.querySelectorAll('tbody');
-        console.log('🔍 All tbody elements found:', allTbodies.length);
-        if (allTbodies.length > 0) {
-            tableBody = allTbodies[0]; // Use first one
-        }
-    }
-    
-    // CREATE TABLE IF IT DOESN'T EXIST
-    if (!tableBody) {
-        console.log('📝 Creating users table structure...');
-        
-        // Find users tab
-        const usersTab = document.getElementById('usersTab');
-        if (!usersTab) {
-            console.error('❌ usersTab element not found!');
-            showToast('Users tab not found', 'error');
-            return;
-        }
-        
-        // Create table HTML
-        usersTab.innerHTML = `
-            <div class="admin-table-container">
-                <div class="admin-filters">
-                    <input type="text" id="searchUsers" placeholder="Search users..." oninput="filterUsers()">
-                    <select id="userRoleFilter" onchange="filterUsers()">
-                        <option value="">All Roles</option>
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Contact</th>
-                            <th>Role</th>
-                            <th>Purchases</th>
-                            <th>Joined</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                        <!-- Users will load here -->
-                    </tbody>
-                </table>
-            </div>
-        `;
-        
-        tableBody = document.getElementById('usersTableBody');
-        console.log('✅ Created new table body:', tableBody ? 'Found' : 'Still missing');
-    }
-    
-    if (!tableBody) {
-        console.error('❌ Could not find or create users table body');
-        showToast('Could not display users table', 'error');
-        return;
-    }
-    
-    console.log('🎨 Now calling displayUsersInTable with table body:', tableBody);
-    displayUsersInTable(users, tableBody);
-}
-
-// Helper function to display users in table
-function displayUsersInTable(users, tableBody) {
-    console.log('📊 Rendering', users?.length || 0, 'users to table body:', tableBody);
+    const usersList = document.getElementById('usersList');
+    if (!usersList) return;
     
     if (!users || users.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="6" style="text-align:center;padding:40px 20px;color:var(--muted);">
-                    No users found
-                </td>
-            </tr>
+        usersList.innerHTML = `
+            <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+                No users found
+            </div>
         `;
-        console.log('📭 No users to display');
         return;
     }
     
-    console.log('🎨 First user sample:', users[0]);
-    
-    // Clear existing content safely
-    tableBody.innerHTML = '';
-    
-    // Create HTML for each user
-    users.forEach((user, index) => {
-        console.log(`👤 Processing user ${index + 1}:`, user.name || user.email);
-        
-        // Extract user data safely
-        const userId = user._id || user.id || `user-${index}`;
-        const userName = user.name || 'Unknown User';
-        const userEmail = user.email || 'No email';
-        const userRole = user.role || 'user';
-        const purchaseCount = user.purchaseCount || user.purchases?.length || 0;
-        const createdAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A';
-        const shortId = userId.substring(0, 8) + '...';
-        const userInitial = userName.charAt(0).toUpperCase();
-        
-        // Role styling
-        const roleColor = userRole === 'admin' ? '#dc3545' : '#28a745';
-        const roleBg = userRole === 'admin' ? '#ffebee' : '#e3f2fd';
-        
-        // Create row element
-        const row = document.createElement('tr');
-        row.setAttribute('data-user-id', userId);
-        row.style.cssText = 'animation: fadeIn 0.3s ease;';
-        
-        row.innerHTML = `
-            <td style="vertical-align:middle;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:36px;height:36px;background:var(--accent1);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;">
-                        ${userInitial}
-                    </div>
-                    <div>
-                        <div style="font-weight:500;color:var(--text);">${userName}</div>
-                        <div style="font-size:11px;color:var(--muted);margin-top:2px;">ID: ${shortId}</div>
-                    </div>
+    usersList.innerHTML = users.map(user => `
+        <div class="user-card" style="padding:15px;border-bottom:1px solid var(--border);transition:background 0.2s;">
+            <div class="user-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div>
+                    <strong>${user.name}</strong>
+                    <span class="user-role ${user.role}" style="padding:2px 8px;border-radius:12px;font-size:12px;font-weight:500;margin-left:8px;background:${user.role === 'admin' ? '#ffebee' : '#e3f2fd'};color:${user.role === 'admin' ? '#c62828' : '#1565c0'};">${user.role}</span>
                 </div>
-            </td>
-            <td style="vertical-align:middle;">
-                <div style="font-size:14px;color:var(--text);">${userEmail}</div>
-                ${user.phone ? `<div style="font-size:12px;color:var(--muted);margin-top:2px;">📱 ${user.phone}</div>` : ''}
-            </td>
-            <td style="vertical-align:middle;">
-                <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:${roleBg};color:${roleColor};border:1px solid ${roleColor}20;display:inline-block;">
-                    ${userRole.toUpperCase()}
-                </span>
-            </td>
-            <td style="vertical-align:middle;">
-                <div style="text-align:center;font-weight:600;font-size:16px;color:var(--accent1);">${purchaseCount}</div>
-                <div style="font-size:11px;color:var(--muted);text-align:center;">purchases</div>
-            </td>
-            <td style="vertical-align:middle;">
-                <div style="font-size:14px;color:var(--text);">${createdAt}</div>
-                <div style="font-size:11px;color:var(--muted);">${user.createdAt ? formatTimeAgo(user.createdAt) : ''}</div>
-            </td>
-            <td style="vertical-align:middle;">
-                <div style="display:flex;gap:8px;justify-content:center;">
-                    <button class="btn-icon small" onclick="generateKeyForUser('${userId}', '${userEmail}')" title="Generate Key" style="background:var(--accent1);color:white;border:none;border-radius:4px;padding:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
-                        </svg>
-                    </button>
-                    
-                    ${userRole === 'user' ? `
-                        <button class="btn-icon small" onclick="makeAdmin('${userId}')" title="Make Admin" style="background:#17a2b8;color:white;border:none;border-radius:4px;padding:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 0 0 8 11a4 4 0 1 1 8 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0 0 15.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 0 0 8 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path>
-                            </svg>
-                        </button>
-                    ` : ''}
-                    
-                    <button class="btn-icon small" onclick="viewUserDetails('${userId}')" title="View Details" style="background:var(--muted);color:white;border:none;border-radius:4px;padding:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                    </button>
+                <div style="font-size:14px;color:var(--muted);">
+                    Joined: ${new Date(user.createdAt).toLocaleDateString()}
                 </div>
-            </td>
-        `;
-        
-        // Append row to table
-        tableBody.appendChild(row);
-    });
-    
-    console.log('✅ Users table updated with', users.length, 'users');
-    
-    // Force a visual check
-    setTimeout(() => {
-        console.log('👁️ Visual check - table rows count:', tableBody.querySelectorAll('tr').length);
-        
-        // Highlight the table for debugging
-        const table = tableBody.closest('table');
-        if (table) {
-            table.style.border = '2px solid #4CAF50';
-            table.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
+            </div>
             
-            // Remove highlight after 2 seconds
-            setTimeout(() => {
-                table.style.border = '';
-                table.style.boxShadow = '';
-            }, 2000);
-        }
-    }, 100);
+            <div class="user-details" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;font-size:14px;color:var(--muted);">
+                <div>
+                    <strong>Email:</strong> ${user.email}
+                </div>
+                <div>
+                    <strong>Purchases:</strong> ${user.purchaseCount || 0}
+                </div>
+                ${user.phone ? `
+                    <div>
+                        <strong>Phone:</strong> ${user.phone}
+                    </div>
+                ` : ''}
+                ${user.whatsapp ? `
+                    <div>
+                        <strong>WhatsApp:</strong> ${user.whatsapp}
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div class="user-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <button class="btn small secondary" onclick="generateKeyForUser('${user._id}', '${user.email}')" style="padding:4px 10px;font-size:12px;">
+                    Generate Key
+                </button>
+                ${user.role === 'user' ? `
+                    <button class="btn small secondary" onclick="makeAdmin('${user._id}')" style="padding:4px 10px;font-size:12px;">
+                        Make Admin
+                    </button>
+                ` : ''}
+                <a href="https://wa.me/${getWhatsAppNumber(user.whatsapp)}?text=${encodeURIComponent(`Hello ${user.name}! This is from Empire Beatstore.`)}" 
+                   target="_blank" 
+                   class="btn small" 
+                   style="background:#25D366;color:white;padding:4px 10px;font-size:12px;text-decoration:none;">
+                    WhatsApp
+                </a>
+            </div>
+        </div>
+    `).join('');
 }
 
-// Add this helper function to format time ago
-function formatTimeAgo(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
-}
 // Quick generate for user
 function generateKeyForUser(userId, userEmail) {
     console.log(`🔑 Quick generate for user: ${userEmail}`);
@@ -4182,37 +3757,25 @@ async function loadPurchaseKeys() {
 }
 
 // Display keys in admin panel
-// Display keys in admin panel - CORRECTED VERSION
 function displayKeys(keys) {
-    const keysTableBody = document.getElementById('keysTableBody');
-    const keysCount = document.getElementById('keysCount');
-    
-    if (!keysTableBody) {
-        console.log('❌ keysTableBody element not found');
-        return;
-    }
+    const keysList = document.getElementById('keysList');
+    if (!keysList) return;
     
     if (!keys || keys.length === 0) {
-        keysTableBody.innerHTML = `
-            <tr>
-                <td colspan="6" style="text-align:center;padding:40px 20px;color:var(--muted);">
-                    No purchase keys found
-                </td>
-            </tr>
+        keysList.innerHTML = `
+            <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+                No purchase keys found
+            </div>
         `;
-        if (keysCount) keysCount.textContent = '0';
         return;
     }
     
-    // Update count
-    if (keysCount) keysCount.textContent = keys.length;
-    
     // Paginate
-    const start = (window.currentPage || 1 - 1) * 10;
+    const start = (window.currentPage || 1) - 1 * 10;
     const end = start + 10;
     const paginatedKeys = keys.slice(start, end);
     
-    keysTableBody.innerHTML = paginatedKeys.map(purchase => {
+    keysList.innerHTML = paginatedKeys.map(purchase => {
         const statusColors = {
             pending: { bg: '#fff3cd', color: '#856404' },
             used: { bg: '#d4edda', color: '#155724' },
@@ -4223,83 +3786,67 @@ function displayKeys(keys) {
         const statusStyle = statusColors[purchase.status] || statusColors.pending;
         
         return `
-            <tr>
-                <td>
-                    <code style="font-family:monospace;font-size:13px;color:var(--accent1);background:var(--card-bg);padding:4px 8px;border-radius:4px;letter-spacing:1px;">
+            <div class="key-card" style="padding:15px;border-bottom:1px solid var(--border);transition:background 0.2s;">
+                <div class="key-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <div class="key-code" style="font-family:monospace;font-size:16px;font-weight:bold;color:var(--accent1);background:var(--card-bg);padding:4px 8px;border-radius:4px;letter-spacing:1px;">
                         ${purchase.purchaseKey}
-                    </code>
-                </td>
-                <td>
-                    <div>
-                        <div style="font-weight:500;">${purchase.beat?.title || 'N/A'}</div>
-                        <div style="font-size:12px;color:var(--muted);">${purchase.beat?.series || ''}</div>
                     </div>
-                </td>
-                <td>
-                    <div>
-                        <div style="font-weight:500;">${purchase.user?.name || 'N/A'}</div>
-                        <div style="font-size:12px;color:var(--muted);">${purchase.user?.email || ''}</div>
-                    </div>
-                </td>
-                <td>
-                    <span style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:${statusStyle.bg};color:${statusStyle.color};">
+                    <span class="key-status" style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:${statusStyle.bg};color:${statusStyle.color};">
                         ${purchase.status}
                     </span>
-                </td>
-                <td>
-                    <div>${new Date(purchase.expiresAt).toLocaleDateString()}</div>
-                    <div style="font-size:12px;color:var(--muted);">
-                        ${purchase.status === 'pending' ? 'Expires in: ' + getTimeUntilExpiry(purchase.expiresAt) : 'Expired'}
+                </div>
+                
+                <div class="key-details" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;font-size:14px;color:var(--muted);">
+                    <div>
+                        <strong>Beat:</strong> ${purchase.beat?.title || 'N/A'}
                     </div>
-                </td>
-                <td>
-                    <div style="display:flex;gap:5px;">
-                        <button class="btn-icon small" onclick="copyKey('${purchase.purchaseKey}')" title="Copy Key">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                            </svg>
-                        </button>
-                        ${purchase.status === 'pending' ? `
-                            <button class="btn-icon small" onclick="extendKey('${purchase._id}')" title="Extend 24h">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </button>
-                            <button class="btn-icon small" onclick="cancelKey('${purchase._id}')" title="Cancel Key" style="color:#dc3545;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        ` : ''}
-                        <button class="btn-icon small" onclick="viewKeyDetails('${purchase._id}')" title="View Details">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                        </button>
+                    <div>
+                        <strong>User:</strong> ${purchase.user?.name || 'N/A'} (${purchase.user?.email || 'N/A'})
                     </div>
-                </td>
-            </tr>
+                    <div>
+                        <strong>Amount:</strong> ${purchase.amount} KES
+                    </div>
+                    <div>
+                        <strong>Created:</strong> ${new Date(purchase.createdAt).toLocaleDateString()}
+                    </div>
+                    <div>
+                        <strong>Expires:</strong> ${new Date(purchase.expiresAt).toLocaleDateString()}
+                    </div>
+                    ${purchase.usedAt ? `
+                        <div>
+                            <strong>Used:</strong> ${new Date(purchase.usedAt).toLocaleDateString()}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="key-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn small secondary" onclick="copyKey('${purchase.purchaseKey}')" style="padding:4px 10px;font-size:12px;">
+                        Copy Key
+                    </button>
+                    
+                    <a href="https://wa.me/${getWhatsAppNumber(purchase.user?.whatsapp)}?text=${encodeURIComponent(`Hello ${purchase.user?.name}! Your purchase key for "${purchase.beat?.title}" is: ${purchase.purchaseKey}. Enter this key on the website to download.`)}" 
+                       target="_blank" 
+                       class="btn small" 
+                       style="background:#25D366;color:white;padding:4px 10px;font-size:12px;text-decoration:none;">
+                        WhatsApp User
+                    </a>
+                    
+                    ${purchase.status === 'pending' ? `
+                        <button class="btn small secondary" onclick="extendKey('${purchase._id}')" style="padding:4px 10px;font-size:12px;">
+                            Extend 24h
+                        </button>
+                        <button class="btn small secondary" onclick="cancelKey('${purchase._id}')" style="padding:4px 10px;font-size:12px;">
+                            Cancel
+                        </button>
+                    ` : ''}
+                    
+                    <button class="btn small secondary" onclick="viewKeyDetails('${purchase._id}')" style="padding:4px 10px;font-size:12px;">
+                        Details
+                    </button>
+                </div>
+            </div>
         `;
     }).join('');
-}
-
-// Helper function to get time until expiry
-function getTimeUntilExpiry(expiryDate) {
-    const now = new Date();
-    const expiry = new Date(expiryDate);
-    const diffMs = expiry - now;
-    
-    if (diffMs <= 0) return 'Expired';
-    
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (diffHours > 0) {
-        return `${diffHours}h ${diffMinutes}m`;
-    } else {
-        return `${diffMinutes}m`;
-    }
 }
 
 // Update pagination
@@ -4361,7 +3908,6 @@ function changeKeysPage(page) {
 }
 
 // Filter keys
-// Filter keys - UPDATED VERSION
 function filterKeys() {
     const search = document.getElementById('searchKeys')?.value.toLowerCase() || '';
     const status = document.getElementById('keyStatusFilter')?.value || '';
@@ -4377,49 +3923,7 @@ function filterKeys() {
     
     window.currentPage = 1;
     displayKeys(filtered);
-    updatePagination();
-}
-
-// Filter users - NEW FUNCTION
-function filterUsers() {
-    const search = document.getElementById('searchUsers')?.value.toLowerCase() || '';
-    const role = document.getElementById('userRoleFilter')?.value || '';
-    
-    const filtered = (window.allUsers || []).filter(user => {
-        const matchesSearch = user.name?.toLowerCase().includes(search) ||
-                             user.email?.toLowerCase().includes(search);
-        const matchesRole = !role || user.role === role;
-        return matchesSearch && matchesRole;
-    });
-    
-    displayUsers(filtered);
-}
-
-// Refresh stats function
-function refreshStats() {
-    console.log('🔄 Refreshing admin stats...');
-    
-    // Show loading state on refresh button
-    const refreshBtn = document.querySelector('.btn.secondary.small[onclick="refreshStats()"]');
-    if (refreshBtn) {
-        const originalHTML = refreshBtn.innerHTML;
-        refreshBtn.innerHTML = `
-            <svg class="loading-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            Refreshing...
-        `;
-        refreshBtn.disabled = true;
-        
-        setTimeout(() => {
-            loadAdminStats();
-            refreshBtn.innerHTML = originalHTML;
-            refreshBtn.disabled = false;
-            showToast('Stats refreshed', 'success');
-        }, 1000);
-    } else {
-        loadAdminStats();
-    }
+    updatePagination(filtered.length);
 }
 
 // Refresh keys
@@ -4458,77 +3962,271 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('year').textContent = new Date().getFullYear();
 });
 
+
 // ============================================
-// UPDATED ADMIN PANEL FUNCTIONS
+// ADMIN PANEL TAB MANAGEMENT - FIXED
 // ============================================
 
-// Setup admin tabs - UPDATED VERSION
+// Initialize admin panel on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔄 EMPIRE BEATSTORE - Initializing Admin Panel...');
+    
+    // Initialize admin panel button
+    initAdminPanelButton();
+    
+    // Setup admin panel event listeners
+    setupAdminPanelListeners();
+});
+
+// Initialize admin panel button
+function initAdminPanelButton() {
+    const adminPanelBtn = document.getElementById('adminPanelBtn');
+    
+    if (!adminPanelBtn) {
+        console.log('❌ Admin panel button not found in HTML');
+        return;
+    }
+    
+    // Remove any existing event listeners
+    const newBtn = adminPanelBtn.cloneNode(true);
+    adminPanelBtn.parentNode.replaceChild(newBtn, adminPanelBtn);
+    
+    // Add click event listener to the new button
+    newBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('🎛️ Admin panel button clicked');
+        
+        // Check if user is admin
+        if (!currentUser || currentUser.role !== 'admin') {
+            showToast('Admin access required. Please sign in as admin.', 'error');
+            
+            // Show admin login modal
+            const adminModal = document.getElementById('adminModal');
+            if (adminModal) {
+                adminModal.style.display = 'flex';
+                adminModal.setAttribute('aria-hidden', 'false');
+                
+                const adminLoginView = document.getElementById('adminLoginView');
+                const adminUploader = document.getElementById('adminUploader');
+                if (adminLoginView) adminLoginView.style.display = 'block';
+                if (adminUploader) adminUploader.style.display = 'none';
+            }
+            return;
+        }
+        
+        // Show admin panel
+        showAdminPanel();
+    });
+    
+    console.log('✅ Admin panel button initialized');
+}
+
+// Setup admin panel event listeners
+function setupAdminPanelListeners() {
+    // Close admin panel on backdrop click
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'adminPanelModal') {
+            closeAdminPanel();
+        }
+    });
+    
+    // Close admin panel on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const adminPanelModal = document.getElementById('adminPanelModal');
+            if (adminPanelModal && adminPanelModal.style.display === 'flex') {
+                closeAdminPanel();
+            }
+        }
+    });
+    
+    // Close admin panel when close button is clicked
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.modal-close') && e.target.closest('#adminPanelModal')) {
+            closeAdminPanel();
+        }
+    });
+}
+
+// Show admin panel
+function showAdminPanel() {
+    console.log('🎛️ Showing admin panel...');
+    
+    const modal = document.getElementById('adminPanelModal');
+    if (!modal) {
+        console.log('❌ Admin panel modal not found');
+        showToast('Admin panel not available', 'error');
+        return;
+    }
+    
+    // Show modal first
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    
+    // Load data for admin panel
+    loadAdminPanelData();
+    
+    // Setup tab switching with a small delay to ensure DOM is ready
+    setTimeout(() => {
+        setupAdminTabs();
+        // Start with first tab
+        switchAdminTab('generate');
+    }, 100);
+    
+    console.log('✅ Admin panel displayed');
+}
+
+// Setup admin tabs - COMPLETELY REFACTORED
 function setupAdminTabs() {
     console.log('🔧 Setting up admin tabs...');
     
-    // Remove existing event listeners first
-    const sidebarItems = document.querySelectorAll('.sidebar-item[data-tab]');
-    sidebarItems.forEach(item => {
-        item.addEventListener('click', function(e) {
+    const tabs = document.querySelectorAll('.admin-tab');
+    const tabPanes = document.querySelectorAll('.admin-tab-pane');
+    
+    if (!tabs.length || !tabPanes.length) {
+        console.log('❌ No admin tabs or panes found');
+        return;
+    }
+    
+    console.log(`Found ${tabs.length} tabs and ${tabPanes.length} panes`);
+    
+    // Remove all existing click event listeners
+    tabs.forEach(tab => {
+        const newTab = tab.cloneNode(true);
+        tab.parentNode.replaceChild(newTab, tab);
+    });
+    
+    // Get fresh references after cloning
+    const freshTabs = document.querySelectorAll('.admin-tab');
+    
+    // Add click event listeners to tabs
+    freshTabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
             e.preventDefault();
-            const tabId = this.dataset.tab;
-            console.log(`📑 Switching to admin tab: ${tabId}`);
-            switchAdminTab(tabId);
+            e.stopPropagation();
+            
+            const tabId = this.getAttribute('data-tab');
+            if (tabId) {
+                console.log(`📑 Switching to admin tab: ${tabId}`);
+                switchAdminTab(tabId);
+            } else {
+                console.warn('Tab has no data-tab attribute:', this);
+            }
         });
     });
     
-    console.log(`✅ Admin tabs initialized (${sidebarItems.length} tabs found)`);
+    console.log('✅ Admin tabs initialized');
 }
 
-// Switch admin tab - UPDATED VERSION
+// Switch admin tab - COMPLETELY REFACTORED
 function switchAdminTab(tabId) {
     console.log(`🔄 Switching to tab: ${tabId}`);
     
-    // Update active sidebar item
-    document.querySelectorAll('.sidebar-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.tab === tabId);
+    // Update active tab
+    const tabs = document.querySelectorAll('.admin-tab');
+    tabs.forEach(tab => {
+        const tabData = tab.getAttribute('data-tab');
+        if (tabData === tabId) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
     });
     
-    // Show active content tab
-    document.querySelectorAll('.admin-tab-content').forEach(pane => {
-        pane.classList.toggle('active', pane.id === tabId + 'Tab');
+    // Show active pane
+    const tabPanes = document.querySelectorAll('.admin-tab-pane');
+    let foundActive = false;
+    
+    tabPanes.forEach(pane => {
+        if (pane.id === tabId + 'Tab') {
+            pane.classList.add('active');
+            pane.style.display = 'flex';
+            foundActive = true;
+            console.log(`✅ Showing pane: ${pane.id}`);
+        } else {
+            pane.classList.remove('active');
+            pane.style.display = 'none';
+        }
     });
     
-    // Load specific data for tab if needed
+    // If no pane found, show generate tab by default
+    if (!foundActive) {
+        console.warn(`Tab pane ${tabId}Tab not found, defaulting to generate`);
+        switchAdminTab('generate');
+        return;
+    }
+    
+    // Load specific data for tab
     switch(tabId) {
-        case 'dashboard':
-            console.log('📊 Loading dashboard...');
-            if (typeof loadAdminStats === 'function') {
-                loadAdminStats();
-            }
-            break;
         case 'keys':
             console.log('🔑 Loading purchase keys...');
-            if (typeof loadPurchaseKeys === 'function') {
-                loadPurchaseKeys();
-            }
+            loadPurchaseKeys();
             break;
-        case 'generate':
-            console.log('🔑 Loading generate tab...');
-            // Load beats dropdown if not already loaded
-            if (typeof loadBeatsForAdmin === 'function') {
-                loadBeatsForAdmin();
-            }
+        case 'stats':
+            console.log('📊 Loading stats...');
+            loadAdminStats();
             break;
         case 'users':
             console.log('👥 Loading users...');
-            if (typeof loadUsersForAdmin === 'function') {
-                loadUsersForAdmin();
-            }
+            loadUsersForAdmin();
             break;
-        case 'settings':
-            console.log('⚙️ Loading settings...');
-            // Settings tab doesn't need additional loading
+        case 'generate':
+            console.log('🔑 Loading beats for generation...');
+            loadBeatsForAdmin();
             break;
+    }
+    
+    console.log(`✅ Tab switched to: ${tabId}`);
+}
+
+// Close admin panel
+function closeAdminPanel() {
+    const modal = document.getElementById('adminPanelModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = 'auto';
+        
+        // Clear any status messages
+        const keyResult = document.getElementById('keyResult');
+        if (keyResult) keyResult.innerHTML = '';
+        
+        console.log('✅ Admin panel closed');
     }
 }
 
-// Load beats for admin dropdown - ADD THIS FUNCTION IF NOT EXISTS
+// ============================================
+// ADMIN PANEL DATA FUNCTIONS
+// ============================================
+
+// Load admin panel data
+async function loadAdminPanelData() {
+    console.log('📡 Loading admin panel data...');
+    
+    try {
+        // Load beats for dropdown
+        await loadBeatsForAdmin();
+        
+        // Load users
+        await loadUsersForAdmin();
+        
+        // Load purchase keys
+        await loadPurchaseKeys();
+        
+        // Load stats
+        await loadAdminStats();
+        
+        console.log('✅ Admin panel data loaded');
+    } catch (error) {
+        console.error('Error loading admin panel data:', error);
+        showToast('Error loading admin data', 'error');
+    }
+}
+
+// Load beats for admin dropdown
 async function loadBeatsForAdmin() {
     try {
         console.log('📡 Loading beats for admin dropdown...');
@@ -4541,7 +4239,7 @@ async function loadBeatsForAdmin() {
             if (!select) return;
             
             // Clear existing options except first
-            select.innerHTML = '<option value="">Choose a beat...</option>';
+            select.innerHTML = '<option value="">-- Select a beat --</option>';
             
             data.beats.forEach(beat => {
                 const option = document.createElement('option');
@@ -4550,101 +4248,639 @@ async function loadBeatsForAdmin() {
                 select.appendChild(option);
             });
             
-            console.log(`✅ Loaded ${data.beats.length} beats for admin dropdown`);
+            console.log(`✅ Loaded ${data.beats.length} beats for admin`);
         }
     } catch (error) {
         console.error('Error loading beats for admin:', error);
     }
 }
 
-// Update showAdminPanel function to properly setup tabs
-// Replace your existing showAdminPanel function with this:
-async function showAdminPanel() {
-    console.log('🎛️ Admin panel button clicked');
-    
-    // Prevent multiple initializations
-    if (!adminPanelInitialized) {
-        adminPanelInitialized = true;
-        console.log('📡 Loading admin panel data...');
-        await loadAdminPanelData();
+// Load users for admin
+async function loadUsersForAdmin() {
+    try {
+        console.log('📡 Loading users for admin...');
+        
+        const response = await fetch(`${API_BASE_URL}/auth/users`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.allUsers = data.users || [];
+            const usersList = document.getElementById('usersList');
+            
+            // Update users list
+            if (usersList) {
+                displayUsers(data.users);
+            }
+            
+            console.log(`✅ Loaded ${data.users.length} users for admin`);
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+        showToast('Error loading users', 'error');
     }
+}
+
+// Display users in admin panel
+function displayUsers(users) {
+    const usersList = document.getElementById('usersList');
+    if (!usersList) return;
     
-    const modal = document.getElementById('adminPanelModal');
-    if (!modal) {
-        console.log('❌ Admin panel modal not found');
-        showToast('Admin panel not available', 'error');
+    if (!users || users.length === 0) {
+        usersList.innerHTML = `
+            <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+                No users found
+            </div>
+        `;
         return;
     }
     
-    // Show modal
-    modal.style.display = 'flex';
-    modal.setAttribute('aria-hidden', 'false');
-    
-    // Setup tabs ONCE
-    if (!adminTabsInitialized) {
-        setupAdminTabs();
-        adminTabsInitialized = true;
-    }
-    
-    // Start with dashboard tab active
-    switchAdminTab('dashboard');
-    
-    console.log('✅ Admin panel displayed');
+    usersList.innerHTML = users.map(user => `
+        <div class="user-card" style="padding:15px;border-bottom:1px solid var(--border);transition:background 0.2s;">
+            <div class="user-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div>
+                    <strong>${user.name}</strong>
+                    <span class="user-role ${user.role}" style="padding:2px 8px;border-radius:12px;font-size:12px;font-weight:500;margin-left:8px;background:${user.role === 'admin' ? '#ffebee' : '#e3f2fd'};color:${user.role === 'admin' ? '#c62828' : '#1565c0'};">${user.role}</span>
+                </div>
+                <div style="font-size:14px;color:var(--muted);">
+                    Joined: ${new Date(user.createdAt).toLocaleDateString()}
+                </div>
+            </div>
+            
+            <div class="user-details" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;font-size:14px;color:var(--muted);">
+                <div>
+                    <strong>Email:</strong> ${user.email}
+                </div>
+                <div>
+                    <strong>Purchases:</strong> ${user.purchaseCount || 0}
+                </div>
+                ${user.phone ? `
+                    <div>
+                        <strong>Phone:</strong> ${user.phone}
+                    </div>
+                ` : ''}
+                ${user.whatsapp ? `
+                    <div>
+                        <strong>WhatsApp:</strong> ${user.whatsapp}
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div class="user-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <button class="btn small secondary" onclick="generateKeyForUser('${user._id || user.id}', '${user.email}')" style="padding:4px 10px;font-size:12px;">
+                    Generate Key
+                </button>
+                ${user.role === 'user' ? `
+                    <button class="btn small secondary" onclick="makeAdmin('${user._id || user.id}')" style="padding:4px 10px;font-size:12px;">
+                        Make Admin
+                    </button>
+                ` : ''}
+                <a href="https://wa.me/${getWhatsAppNumber(user.whatsapp)}?text=${encodeURIComponent(`Hello ${user.name}! This is from Empire Beatstore.`)}" 
+                   target="_blank" 
+                   class="btn small" 
+                   style="background:#25D366;color:white;padding:4px 10px;font-size:12px;text-decoration:none;">
+                    WhatsApp
+                </a>
+            </div>
+        </div>
+    `).join('');
 }
 
-// Update loadAdminPanelData function
-async function loadAdminPanelData() {
-    console.log('📡 Loading admin panel data...');
+// Filter users
+function filterUsers() {
+    const search = document.getElementById('searchUsers')?.value.toLowerCase() || '';
+    const role = document.getElementById('userRoleFilter')?.value || '';
+    
+    const filtered = (window.allUsers || []).filter(user => {
+        const matchesSearch = user.name?.toLowerCase().includes(search) ||
+                             user.email?.toLowerCase().includes(search) ||
+                             user.phone?.toLowerCase().includes(search);
+        const matchesRole = !role || user.role === role;
+        return matchesSearch && matchesRole;
+    });
+    
+    displayUsers(filtered);
+}
+
+// Quick generate for user
+function generateKeyForUser(userId, userEmail) {
+    console.log(`🔑 Quick generate for user: ${userEmail}`);
+    
+    // Switch to generate tab
+    switchAdminTab('generate');
+    
+    // Pre-fill user email
+    const emailInput = document.getElementById('adminUserEmail');
+    if (emailInput) {
+        emailInput.value = userEmail;
+        emailInput.focus();
+    }
+    
+    showToast(`Prefilled for ${userEmail}. Now select a beat.`, 'info');
+}
+
+// Load purchase keys for admin
+async function loadPurchaseKeys() {
+    try {
+        console.log('📡 Loading purchase keys...');
+        
+        const response = await fetch(`${API_BASE_URL}/purchases/admin/purchase-keys`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.status === 404) {
+            console.error('❌ Purchase keys route not found (404)');
+            showToast('Admin route not configured. Check backend.', 'error');
+            
+            const keysList = document.getElementById('keysList');
+            if (keysList) {
+                keysList.innerHTML = `
+                    <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+                        <p>⚠️ Route not configured</p>
+                        <p style="font-size:12px;">Make sure backend has /api/purchases/admin/purchase-keys route</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.allPurchaseKeys = data.purchases || [];
+            displayKeys(allPurchaseKeys);
+            updatePagination();
+            console.log(`✅ Loaded ${allPurchaseKeys.length} purchase keys`);
+        } else {
+            showToast(data.message || 'Error loading keys', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading purchase keys:', error);
+        
+        const keysList = document.getElementById('keysList');
+        if (keysList) {
+            keysList.innerHTML = `
+                <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+                    <p>❌ Error loading purchase keys</p>
+                    <p style="font-size:12px;">${error.message}</p>
+                    <button class="btn small secondary" onclick="loadPurchaseKeys()" style="margin-top:10px;">
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+// Display keys in admin panel
+function displayKeys(keys) {
+    const keysList = document.getElementById('keysList');
+    if (!keysList) return;
+    
+    if (!keys || keys.length === 0) {
+        keysList.innerHTML = `
+            <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+                No purchase keys found
+            </div>
+        `;
+        return;
+    }
+    
+    // Paginate
+    const currentPage = window.currentPage || 1;
+    const perPage = 10;
+    const start = (currentPage - 1) * perPage;
+    const end = start + perPage;
+    const paginatedKeys = keys.slice(start, end);
+    
+    keysList.innerHTML = paginatedKeys.map(purchase => {
+        const statusColors = {
+            pending: { bg: '#fff3cd', color: '#856404' },
+            used: { bg: '#d4edda', color: '#155724' },
+            expired: { bg: '#f8d7da', color: '#721c24' },
+            cancelled: { bg: '#e2e3e5', color: '#383d41' }
+        };
+        
+        const statusStyle = statusColors[purchase.status] || statusColors.pending;
+        
+        return `
+            <div class="key-card" style="padding:15px;border-bottom:1px solid var(--border);transition:background 0.2s;">
+                <div class="key-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <div class="key-code" style="font-family:monospace;font-size:16px;font-weight:bold;color:var(--accent1);background:var(--card-bg);padding:4px 8px;border-radius:4px;letter-spacing:1px;">
+                        ${purchase.purchaseKey}
+                    </div>
+                    <span class="key-status" style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:${statusStyle.bg};color:${statusStyle.color};">
+                        ${purchase.status}
+                    </span>
+                </div>
+                
+                <div class="key-details" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;font-size:14px;color:var(--muted);">
+                    <div>
+                        <strong>Beat:</strong> ${purchase.beat?.title || 'N/A'}
+                    </div>
+                    <div>
+                        <strong>User:</strong> ${purchase.user?.name || 'N/A'} (${purchase.user?.email || 'N/A'})
+                    </div>
+                    <div>
+                        <strong>Amount:</strong> ${purchase.amount} KES
+                    </div>
+                    <div>
+                        <strong>Created:</strong> ${new Date(purchase.createdAt).toLocaleDateString()}
+                    </div>
+                    <div>
+                        <strong>Expires:</strong> ${new Date(purchase.expiresAt).toLocaleDateString()}
+                    </div>
+                    ${purchase.usedAt ? `
+                        <div>
+                            <strong>Used:</strong> ${new Date(purchase.usedAt).toLocaleDateString()}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="key-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn small secondary" onclick="copyKey('${purchase.purchaseKey}')" style="padding:4px 10px;font-size:12px;">
+                        Copy Key
+                    </button>
+                    
+                    <a href="https://wa.me/${getWhatsAppNumber(purchase.user?.whatsapp)}?text=${encodeURIComponent(`Hello ${purchase.user?.name}! Your purchase key for "${purchase.beat?.title}" is: ${purchase.purchaseKey}. Enter this key on the website to download.`)}" 
+                       target="_blank" 
+                       class="btn small" 
+                       style="background:#25D366;color:white;padding:4px 10px;font-size:12px;text-decoration:none;">
+                        WhatsApp User
+                    </a>
+                    
+                    ${purchase.status === 'pending' ? `
+                        <button class="btn small secondary" onclick="extendKey('${purchase._id || purchase.id}')" style="padding:4px 10px;font-size:12px;">
+                            Extend 24h
+                        </button>
+                        <button class="btn small secondary" onclick="cancelKey('${purchase._id || purchase.id}')" style="padding:4px 10px;font-size:12px;">
+                            Cancel
+                        </button>
+                    ` : ''}
+                    
+                    <button class="btn small secondary" onclick="viewKeyDetails('${purchase._id || purchase.id}')" style="padding:4px 10px;font-size:12px;">
+                        Details
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Update pagination
+function updatePagination() {
+    const totalKeys = window.allPurchaseKeys?.length || 0;
+    const totalPages = Math.ceil(totalKeys / 10);
+    const pagination = document.getElementById('keysPagination');
+    
+    if (!pagination || totalPages <= 1) {
+        if (pagination) pagination.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    const currentPage = window.currentPage || 1;
+    
+    // Previous button
+    html += `
+        <button class="page-btn" onclick="changeKeysPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding:8px 12px;border:1px solid var(--border);background:var(--card-bg);color:var(--text);border-radius:4px;cursor:pointer;">
+            ←
+        </button>
+    `;
+    
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `
+                <button class="page-btn ${currentPage === i ? 'active' : ''}" onclick="changeKeysPage(${i})" style="padding:8px 12px;border:1px solid var(--border);background:${currentPage === i ? 'var(--accent1)' : 'var(--card-bg)'};color:${currentPage === i ? 'white' : 'var(--text)'};border-radius:4px;cursor:pointer;border-color:${currentPage === i ? 'var(--accent1)' : 'var(--border)'};">
+                    ${i}
+                </button>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<span style="padding:8px 12px;color:var(--muted);">...</span>`;
+        }
+    }
+    
+    // Next button
+    html += `
+        <button class="page-btn" onclick="changeKeysPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding:8px 12px;border:1px solid var(--border);background:var(--card-bg);color:var(--text);border-radius:4px;cursor:pointer;">
+            →
+        </button>
+    `;
+    
+    pagination.innerHTML = html;
+}
+
+// Change keys page
+function changeKeysPage(page) {
+    const totalPages = Math.ceil((window.allPurchaseKeys?.length || 0) / 10);
+    if (page < 1 || page > totalPages) return;
+    
+    window.currentPage = page;
+    displayKeys(window.allPurchaseKeys);
+    updatePagination();
+    
+    // Scroll to top of list
+    const keysList = document.getElementById('keysList');
+    if (keysList) keysList.scrollTop = 0;
+}
+
+// Filter keys
+function filterKeys() {
+    const search = document.getElementById('searchKeys')?.value.toLowerCase() || '';
+    const status = document.getElementById('keyStatusFilter')?.value || '';
+    
+    const filtered = (window.allPurchaseKeys || []).filter(purchase => {
+        const matchesSearch = purchase.purchaseKey?.toLowerCase().includes(search) ||
+                             purchase.beat?.title?.toLowerCase().includes(search) ||
+                             purchase.user?.name?.toLowerCase().includes(search) ||
+                             purchase.user?.email?.toLowerCase().includes(search);
+        const matchesStatus = !status || purchase.status === status;
+        return matchesSearch && matchesStatus;
+    });
+    
+    window.currentPage = 1;
+    displayKeys(filtered);
+    updatePagination(filtered.length);
+}
+
+// Refresh keys
+function refreshKeys() {
+    loadPurchaseKeys();
+    showToast('Purchase keys refreshed', 'info');
+}
+
+// Copy key to clipboard
+function copyKey(key) {
+    navigator.clipboard.writeText(key)
+        .then(() => showToast('Key copied to clipboard!', 'success'))
+        .catch(err => {
+            console.error('Copy failed:', err);
+            showToast('Failed to copy. Please copy manually.', 'error');
+        });
+}
+
+// Load admin stats
+async function loadAdminStats() {
+    try {
+        console.log('📊 Loading admin stats...');
+        
+        const response = await fetch(`${API_BASE_URL}/purchases/admin/stats`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update stats cards
+            const totalKeysEl = document.getElementById('totalKeys');
+            const pendingKeysEl = document.getElementById('pendingKeys');
+            const usedKeysEl = document.getElementById('usedKeys');
+            const expiredKeysEl = document.getElementById('expiredKeys');
+            
+            if (totalKeysEl) totalKeysEl.textContent = data.stats.totalKeys || 0;
+            if (pendingKeysEl) pendingKeysEl.textContent = data.stats.pendingKeys || 0;
+            if (usedKeysEl) usedKeysEl.textContent = data.stats.usedKeys || 0;
+            if (expiredKeysEl) expiredKeysEl.textContent = data.stats.expiredKeys || 0;
+            
+            // Load recent purchases
+            await loadRecentPurchases();
+            
+            console.log('✅ Admin stats loaded');
+        } else {
+            console.error('Stats error:', data.message);
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+// Load recent purchases for stats tab
+async function loadRecentPurchases() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/purchases/recent`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const container = document.getElementById('recentPurchases');
+            if (!container) return;
+            
+            if (!data.purchases || data.purchases.length === 0) {
+                container.innerHTML = '<p style="color:var(--muted);text-align:center;">No recent purchases</p>';
+                return;
+            }
+            
+            container.innerHTML = data.purchases.map(purchase => `
+                <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <strong>${purchase.beat?.title || 'Unknown Beat'}</strong><br>
+                            <small style="color:var(--muted);">${purchase.user?.name || 'Unknown User'}</small>
+                        </div>
+                        <div style="text-align:right;">
+                            <div>${purchase.amount || 0} KES</div>
+                            <small style="color:var(--muted);">
+                                ${new Date(purchase.usedAt || purchase.createdAt).toLocaleDateString()}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading recent purchases:', error);
+    }
+}
+
+// Generate purchase key (admin panel)
+async function generatePurchaseKeyAdmin() {
+    console.log('🔑 Generating purchase key (admin)...');
     
     try {
-        // Load beats for dropdown
-        await loadBeatsForAdmin();
+        // Get elements safely
+        const beatId = document.getElementById('adminBeatSelect')?.value;
+        const userEmail = document.getElementById('adminUserEmail')?.value.trim();
+        const expirationHours = document.getElementById('expirationHours')?.value || 24;
+        const keyResult = document.getElementById('keyResult');
+        const generateBtn = document.querySelector('#generateTab .btn');
         
-        // Load users
-        await loadUsersForAdmin();
+        // Debug logging
+        console.log('Elements found:', {
+            beatId,
+            userEmail,
+            expirationHours,
+            keyResult: !!keyResult,
+            generateBtn: !!generateBtn
+        });
         
-        // Load stats
-        if (typeof loadAdminStats === 'function') {
-            await loadAdminStats();
+        // Validation
+        if (!beatId) {
+            showKeyResult(keyResult, '❌ Please select a beat', 'error');
+            return;
         }
         
-        console.log('✅ Admin panel data loaded');
+        if (!userEmail) {
+            showKeyResult(keyResult, '❌ Please enter user email', 'error');
+            return;
+        }
+        
+        // Get beat
+        const selectedBeat = allBeats.find(b => b.id === beatId);
+        if (!selectedBeat) {
+            showKeyResult(keyResult, '❌ Selected beat not found', 'error');
+            return;
+        }
+        
+        // Update button text
+        if (generateBtn) {
+            generateBtn.disabled = true;
+            const originalText = generateBtn.innerHTML;
+            
+            generateBtn.innerHTML = `
+                <span style="display:flex;align-items:center;gap:8px">
+                    <svg class="loading-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 11-6.219-8.56" />
+                    </svg>
+                    Generating...
+                </span>
+            `;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/purchases/generate-key`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        beatId,
+                        userEmail,
+                        expirationHours: parseInt(expirationHours)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const key = data.purchaseKey;
+                    
+                    // Show success message
+                    showKeyResult(keyResult, `
+                        <div style="text-align:center;">
+                            <h4 style="margin-bottom:15px;color:var(--success);">✅ Purchase Key Generated!</h4>
+                            <div style="background:var(--card-bg);padding:15px;border-radius:8px;border:2px solid var(--accent1);margin-bottom:15px;">
+                                <div style="font-family:monospace;font-size:20px;font-weight:bold;color:var(--accent1);letter-spacing:1px;margin-bottom:10px;">
+                                    ${key}
+                                </div>
+                                <div style="margin-top:10px;font-size:14px;color:var(--muted);">
+                                    <div><strong>Beat:</strong> ${selectedBeat.title}</div>
+                                    <div><strong>User:</strong> ${userEmail}</div>
+                                    <div><strong>Expires in:</strong> ${expirationHours} hours</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:10px;justify-content:center;">
+                                <button class="btn" onclick="copyKeyToClipboard('${key}')">
+                                    📋 Copy Key
+                                </button>
+                                <button class="btn secondary" onclick="sendKeyViaWhatsApp('${key}', '${userEmail}', '${selectedBeat.title}')">
+                                    💬 WhatsApp
+                                </button>
+                            </div>
+                        </div>
+                    `, 'success');
+                    
+                    // Reset form
+                    document.getElementById('adminUserEmail').value = '';
+                    document.getElementById('adminBeatSelect').selectedIndex = 0;
+                    
+                    // Refresh keys list
+                    setTimeout(() => {
+                        loadPurchaseKeys();
+                    }, 1000);
+                    
+                    showToast('Purchase key generated successfully!', 'success');
+                    
+                } else {
+                    showKeyResult(keyResult, `❌ ${data.message || 'Failed to generate key'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Generate key error:', error);
+                showKeyResult(keyResult, '❌ Network error. Please check connection and try again.', 'error');
+            } finally {
+                // Restore button state
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Generate Purchase Key
+                `;
+            }
+        }
     } catch (error) {
-        console.error('Error loading admin panel data:', error);
-        showToast('Error loading admin data', 'error');
+        console.error('Unexpected error in generatePurchaseKeyAdmin:', error);
+        showToast('An unexpected error occurred', 'error');
     }
 }
 
-// Add this function to handle sidebar item clicks directly
-function setupAdminSidebarNavigation() {
-    document.addEventListener('click', function(e) {
-        // Check if clicked element is a sidebar item
-        const sidebarItem = e.target.closest('.sidebar-item[data-tab]');
-        if (sidebarItem && document.getElementById('adminPanelModal').style.display === 'flex') {
-            e.preventDefault();
-            const tabId = sidebarItem.dataset.tab;
-            switchAdminTab(tabId);
-        }
-        
-        // Handle close button
-        if (e.target.closest('.modal-close') && e.target.closest('#adminPanelModal')) {
-            closeAdminPanel();
-        }
-    });
+// Show key result
+function showKeyResult(element, message, type = 'info') {
+    if (!element) return;
+    
+    const typeClass = type === 'success' ? 'success' : 
+                     type === 'error' ? 'error' : 'info';
+    
+    element.innerHTML = `
+        <div class="key-result ${typeClass}" style="padding:15px;border-radius:8px;margin:10px 0;">
+            ${message}
+        </div>
+    `;
+    
+    // Auto-clear after 10 seconds for success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            if (element && element.innerHTML.includes('key-result')) {
+                element.innerHTML = '';
+            }
+        }, 10000);
+    }
 }
 
-// Initialize admin sidebar navigation when DOM loads
-document.addEventListener('DOMContentLoaded', function() {
-    setupAdminSidebarNavigation();
+// Helper functions
+function copyKeyToClipboard(key) {
+    navigator.clipboard.writeText(key)
+        .then(() => showToast('Key copied to clipboard!', 'success'))
+        .catch(err => {
+            console.error('Copy failed:', err);
+            showToast('Failed to copy. Please copy manually.', 'error');
+        });
+}
+
+function sendKeyViaWhatsApp(key, userEmail, beatTitle) {
+    const message = encodeURIComponent(
+        `Hello! Your purchase key for "${beatTitle}" is: ${key}\n\n` +
+        `Enter this key at Empire Beatstore to download your beat.\n` +
+        `Key: ${key}\n` +
+        `Email: ${userEmail}\n` +
+        `Note: This key expires in 24 hours.`
+    );
     
-    // Also add keyboard navigation
-    document.addEventListener('keydown', function(e) {
-        const adminModal = document.getElementById('adminPanelModal');
-        if (adminModal && adminModal.style.display === 'flex') {
-            // Handle escape key to close
-            if (e.key === 'Escape') {
-                closeAdminPanel();
-            }
-        }
-    });
-});
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+}
