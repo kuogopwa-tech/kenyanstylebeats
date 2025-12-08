@@ -846,7 +846,7 @@ function showCheckoutModal(beatId) {
     function generateStepsHTML(email) {
         const steps = [
             { num: 1, title: "Contact on WhatsApp", desc: `Click WhatsApp button to message the seller.`, color: "var(--accent1)" },
-            { num: 2, title: "Complete Payment", desc: "Pay via seller's whatsapp number. Confirm payment with seller.", color: "#28a745" },
+            { num: 2, title: "Complete Payment", desc: "Pay via Till Number 602710, and confirm your payment to the seller.", color: "#28a745" },
             { num: 3, title: "Receive Purchase Key", desc: 'Get unique key via WhatsApp. Example format: <code class="checkout-key-example">BKT-7X92-3F8A-1C5D</code>', color: "#ffc107" }
         ];
         
@@ -1386,7 +1386,7 @@ async function retryDownload(purchaseKey) {
 
 // Contact support function
 function contactSupport() {
-    const whatsappNumber = '254796392424'; // Your support number
+    const whatsappNumber = '254748097934'; // Your support number
     const message = encodeURIComponent(
         `Hello! I need help with a download issue on Empire Beatstore.\n` +
         `My purchase key was verified but download failed.\n` +
