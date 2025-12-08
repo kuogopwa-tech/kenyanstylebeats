@@ -564,13 +564,13 @@
   <!-- Checkout Modal -->
 <!-- Checkout Modal -->
 <div id="checkoutModal" class="checkout-modal" style="display: none;">
-    <div class="checkout-modal-overlay" onclick="checkoutHideModal()"></div>
+    <div class="checkout-modal-overlay" id="checkoutOverlay"></div>
     <div class="checkout-modal-container">
         <!-- Modal Header -->
         <div class="checkout-modal-header">
             <div class="checkout-modal-header-inner">
                 <h2 id="checkoutTitle" class="checkout-modal-title">Purchase</h2>
-                <button class="checkout-modal-close" onclick="checkoutHideModal()" aria-label="Close">
+                <button class="checkout-modal-close" id="checkoutCloseBtn" aria-label="Close">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -620,7 +620,7 @@
                     <p class="modal-subtitle">Manage purchase keys, users, and view statistics</p>
                 </div>
             </div>
-            <button class="modal-close" data-close>&times;</button>
+            <button class="modal-close" id="adminPanelCloseBtn">&times;</button>
         </div>
         
         <div class="admin-container">
@@ -663,7 +663,7 @@
                         </div>
                         
                         <div class="form-actions">
-                            <button class="btn primary" onclick="generatePurchaseKeyAdmin()">
+                            <button class="btn primary" id="generateKeyBtn">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M12 5v14M5 12h14"/>
                                 </svg>
@@ -683,18 +683,17 @@
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
-                            <input type="text" id="searchKeys" placeholder="Search keys..." 
-                                   oninput="filterKeys()">
+                            <input type="text" id="searchKeys" placeholder="Search keys...">
                         </div>
                         
-                        <select id="keyStatusFilter" class="form-control" onchange="filterKeys()">
+                        <select id="keyStatusFilter" class="form-control">
                             <option value="">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="used">Used</option>
                             <option value="expired">Expired</option>
                         </select>
                         
-                        <button class="btn secondary" onclick="refreshKeys()">
+                        <button class="btn secondary" id="refreshKeysBtn">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M23 4v6h-6M1 20v-6h6"/>
                                 <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
@@ -720,11 +719,10 @@
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
-                            <input type="text" id="searchUsers" placeholder="Search users..." 
-                                   oninput="filterUsers()">
+                            <input type="text" id="searchUsers" placeholder="Search users...">
                         </div>
                         
-                        <select id="userRoleFilter" class="form-control" onchange="filterUsers()">
+                        <select id="userRoleFilter" class="form-control">
                             <option value="">All Roles</option>
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
@@ -805,7 +803,6 @@
         </div>
     </div>
 </div>
-
 
   <!-- Success/Error Toast -->
   <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">

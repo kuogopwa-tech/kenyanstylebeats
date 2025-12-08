@@ -934,9 +934,7 @@ function showCheckoutModal(beatId) {
                     </p>
                 </div>
                 
-                <button onclick="handleEnterKey('${beatId}')" class="checkout-key-button">
-                    Enter Purchase Key
-                </button>
+                <button class="checkout-key-button" data-beat-id="${beatId}">Enter Purchase Key</button>
             </div>
             
             <!-- User Info Card -->
@@ -1002,30 +1000,22 @@ function showKeyInputStep(beatId) {
     
     if (!body || !footer) return;
     
-    // Clear any existing content and listeners
-    body.innerHTML = '';
-    footer.innerHTML = '';
-    
-    // Store the current beatId globally for navigation
+    // Store the current beatId globally
     window.currentBeatId = beatId;
     
     body.innerHTML = `
         <div class="checkout-key-input-step">
             <!-- Instructions Section -->
-            <div class="checkout-step-header" style="margin-bottom: 1.5rem;">
-                <h3 class="checkout-step-title" style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text);">
-                    Enter Purchase Key
-                </h3>
-                <p class="checkout-step-subtitle" style="color: var(--muted); font-size: 0.9375rem; line-height: 1.5;">
+            <div class="checkout-step-header">
+                <h3 class="checkout-step-title">Enter Purchase Key</h3>
+                <p class="checkout-step-subtitle">
                     Enter the purchase key you received from the seller after making payment.
                 </p>
             </div>
             
             <!-- Key Input Section -->
             <div class="checkout-key-input-container">
-                <label class="checkout-input-label">
-                    Purchase Key
-                </label>
+                <label class="checkout-input-label">Purchase Key</label>
                 
                 <div class="checkout-input-group">
                     <input type="text" 
@@ -1035,9 +1025,7 @@ function showKeyInputStep(beatId) {
                            maxlength="20"
                            autocomplete="off"
                            spellcheck="false">
-                    <button class="checkout-clear-btn" onclick="clearKeyInput()">
-                        Clear
-                    </button>
+                    <button class="checkout-clear-btn">Clear</button>
                 </div>
                 
                 <div class="checkout-key-hint">
@@ -1055,12 +1043,9 @@ function showKeyInputStep(beatId) {
         </div>
     `;
     
-    // Update footer
     footer.innerHTML = `
         <div class="checkout-key-input-footer">
-            <button class="checkout-back-btn" onclick="goBackToCheckout()">
-                ← Back to Checkout
-            </button>
+            <button class="checkout-back-btn">← Back to Checkout</button>
             <button class="checkout-verify-btn" id="verifyDownloadBtn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -1071,21 +1056,11 @@ function showKeyInputStep(beatId) {
         </div>
     `;
     
-    // Add event listener properly
-    const verifyBtn = document.getElementById('verifyDownloadBtn');
-    if (verifyBtn) {
-        // Remove any existing listeners
-        verifyBtn.replaceWith(verifyBtn.cloneNode(true));
-        const newVerifyBtn = document.getElementById('verifyDownloadBtn');
-        newVerifyBtn.addEventListener('click', verifyAndDownloadPurchaseKey);
-    }
-    
     // Focus on input
     setTimeout(() => {
         const input = document.getElementById('purchaseKeyInput');
         if (input) {
             input.focus();
-            // Auto-select text if there's any
             input.select();
         }
     }, 100);
@@ -4814,3 +4789,354 @@ function sendKeyViaWhatsApp(key, userEmail, beatTitle) {
     
     window.open(`https://wa.me/?text=${message}`, '_blank');
 }
+
+// ============================================
+// ADMIN PANEL EVENT HANDLERS (CSP-SAFE)
+// ============================================
+
+// Initialize admin panel event listeners
+function initAdminPanelEvents() {
+    console.log('🔧 Initializing admin panel events...');
+    
+    // 1. Admin panel close button
+    const closeBtn = document.getElementById('adminPanelCloseBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeAdminPanel);
+    }
+    
+    // 2. Generate Key button
+    const generateBtn = document.getElementById('generateKeyBtn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', handleGenerateKey);
+    }
+    
+    // 3. Refresh Keys button
+    const refreshBtn = document.getElementById('refreshKeysBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshKeys);
+    }
+    
+    // 4. Search and filter inputs
+    const searchKeysInput = document.getElementById('searchKeys');
+    if (searchKeysInput) {
+        searchKeysInput.addEventListener('input', filterKeys);
+    }
+    
+    const keyStatusFilter = document.getElementById('keyStatusFilter');
+    if (keyStatusFilter) {
+        keyStatusFilter.addEventListener('change', filterKeys);
+    }
+    
+    const searchUsersInput = document.getElementById('searchUsers');
+    if (searchUsersInput) {
+        searchUsersInput.addEventListener('input', filterUsers);
+    }
+    
+    const userRoleFilter = document.getElementById('userRoleFilter');
+    if (userRoleFilter) {
+        userRoleFilter.addEventListener('change', filterUsers);
+    }
+    
+    // 5. Admin tabs
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            switchAdminTab(tabId);
+        });
+    });
+    
+    // 6. Form submission prevention
+    const generateForm = document.querySelector('#generateTab form');
+    if (generateForm) {
+        generateForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleGenerateKey();
+        });
+    }
+}
+
+// Handle Generate Key button
+function handleGenerateKey(e) {
+    if (e) e.preventDefault();
+    console.log('🔑 Generate Key button clicked');
+    generatePurchaseKeyAdmin();
+}
+
+// ============================================
+// CHECKOUT MODAL EVENT HANDLERS
+// ============================================
+
+// Add this to your showCheckoutModal function
+// Replace any onclick="showKeyInputStep()" with:
+// `<button class="checkout-key-button" data-beat-id="${beatId}">Enter Purchase Key</button>`
+
+// Then add this event delegation for checkout:
+document.addEventListener('click', function(e) {
+    // Handle Enter Key buttons in checkout
+    if (e.target.closest('.checkout-key-button')) {
+        e.preventDefault();
+        const button = e.target.closest('.checkout-key-button');
+        const beatId = button.getAttribute('data-beat-id');
+        
+        if (beatId) {
+            console.log('🔑 Enter key button clicked:', beatId);
+            showKeyInputStep(beatId);
+        }
+    }
+    
+    // Handle Verify & Download button
+    if (e.target.closest('#verifyDownloadBtn')) {
+        e.preventDefault();
+        console.log('✅ Verify/download button clicked');
+        verifyAndDownloadPurchaseKey();
+    }
+});
+
+// ============================================
+// INITIALIZE EVENT HANDLERS ON PAGE LOAD
+// ============================================
+
+// Update your existing DOMContentLoaded listener
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing event handlers...');
+    
+    // Initialize admin panel events when modal is shown
+    const adminPanelModal = document.getElementById('adminPanelModal');
+    if (adminPanelModal) {
+        // Use MutationObserver to detect when modal is shown
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'style' || mutation.attributeName === 'class') {
+                    if (adminPanelModal.style.display === 'flex' || 
+                        !adminPanelModal.hasAttribute('aria-hidden') || 
+                        adminPanelModal.getAttribute('aria-hidden') === 'false') {
+                        initAdminPanelEvents();
+                    }
+                }
+            });
+        });
+        
+        observer.observe(adminPanelModal, {
+            attributes: true,
+            attributeFilter: ['style', 'class', 'aria-hidden']
+        });
+    }
+    
+    // Also initialize immediately if modal is already visible
+    if (adminPanelModal && 
+        (adminPanelModal.style.display === 'flex' || 
+         adminPanelModal.getAttribute('aria-hidden') === 'false')) {
+        initAdminPanelEvents();
+    }
+});
+
+// ============================================
+// FALLBACK EVENT DELEGATION
+// ============================================
+
+// Add fallback event delegation for any missed elements
+document.addEventListener('click', function(e) {
+    // Fallback for any generate key buttons
+    if (e.target.closest('.btn.primary') && 
+        e.target.closest('.btn.primary').textContent.includes('Generate')) {
+        e.preventDefault();
+        handleGenerateKey(e);
+    }
+    
+    // Fallback for refresh buttons
+    if (e.target.closest('.btn.secondary') && 
+        e.target.closest('.btn.secondary').textContent.includes('Refresh')) {
+        e.preventDefault();
+        refreshKeys();
+    }
+    
+    // Fallback for admin tabs
+    if (e.target.closest('.admin-tab')) {
+        e.preventDefault();
+        const tab = e.target.closest('.admin-tab');
+        const tabId = tab.getAttribute('data-tab');
+        switchAdminTab(tabId);
+    }
+});
+
+// ============================================
+// CHECKOUT MODAL EVENT HANDLERS (CSP-SAFE)
+// ============================================
+
+// Initialize checkout modal event listeners
+function initCheckoutModalEvents() {
+    console.log('🛒 Initializing checkout modal events...');
+    
+    // 1. Close button
+    const closeBtn = document.getElementById('checkoutCloseBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', checkoutHideModal);
+    }
+    
+    // 2. Overlay click to close
+    const overlay = document.getElementById('checkoutOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', checkoutHideModal);
+    }
+    
+    // 3. Escape key to close
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('checkoutModal');
+            if (modal && modal.style.display !== 'none') {
+                checkoutHideModal();
+            }
+        }
+    });
+    
+    // 4. Event delegation for dynamic content inside checkout modal
+    setupCheckoutEventDelegation();
+}
+
+// Event delegation for dynamic content in checkout modal
+function setupCheckoutEventDelegation() {
+    // Listen for clicks inside checkout modal
+    document.addEventListener('click', function(e) {
+        // Check if click is inside checkout modal
+        const checkoutModal = document.getElementById('checkoutModal');
+        if (!checkoutModal || checkoutModal.style.display === 'none') {
+            return;
+        }
+        
+        // Handle Enter Key button
+        if (e.target.closest('.checkout-key-button')) {
+            e.preventDefault();
+            const button = e.target.closest('.checkout-key-button');
+            const beatId = button.getAttribute('data-beat-id') || window.currentBeatId;
+            
+            console.log('🔑 Enter key button clicked:', beatId);
+            
+            if (beatId) {
+                showKeyInputStep(beatId);
+            } else {
+                console.error('No beat ID found for key button');
+            }
+            return;
+        }
+        
+        // Handle Verify & Download button
+        if (e.target.closest('#verifyDownloadBtn') || 
+            e.target.closest('.checkout-verify-btn')) {
+            e.preventDefault();
+            console.log('✅ Verify/download button clicked');
+            verifyAndDownloadPurchaseKey();
+            return;
+        }
+        
+        // Handle Clear button in key input
+        if (e.target.closest('.checkout-clear-btn')) {
+            e.preventDefault();
+            clearKeyInput();
+            return;
+        }
+        
+        // Handle Back button in key input
+        if (e.target.closest('.checkout-back-btn')) {
+            e.preventDefault();
+            goBackToCheckout();
+            return;
+        }
+        
+        // Handle My Purchases button
+        if (e.target.closest('.checkout-btn-purchases')) {
+            e.preventDefault();
+            checkMyPurchases();
+            return;
+        }
+        
+        // Handle Cancel button
+        if (e.target.closest('.checkout-btn-secondary') && 
+            e.target.closest('.checkout-btn-secondary').textContent.includes('Cancel')) {
+            e.preventDefault();
+            checkoutHideModal();
+            return;
+        }
+    });
+    
+    // Handle form submissions inside checkout
+    document.addEventListener('submit', function(e) {
+        const checkoutModal = document.getElementById('checkoutModal');
+        if (!checkoutModal || checkoutModal.style.display === 'none') {
+            return;
+        }
+        
+        // Prevent any form submission inside checkout
+        e.preventDefault();
+        
+        // Check if it's a key input form
+        if (e.target.id === 'keyInputForm') {
+            verifyAndDownloadPurchaseKey();
+        }
+    });
+}
+
+// Add this to your existing DOMContentLoaded listener
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing checkout modal handlers...');
+    
+    // Initialize checkout modal events when modal is shown
+    const checkoutModal = document.getElementById('checkoutModal');
+    if (checkoutModal) {
+        // Use MutationObserver to detect when modal is shown
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'style') {
+                    if (checkoutModal.style.display === 'flex' || 
+                        checkoutModal.style.display === 'block') {
+                        initCheckoutModalEvents();
+                        
+                        // Also re-attach event delegation when content changes
+                        setupCheckoutEventDelegation();
+                    }
+                }
+            });
+        });
+        
+        observer.observe(checkoutModal, {
+            attributes: true,
+            attributeFilter: ['style']
+        });
+    }
+    
+    // Also initialize immediately if modal is already visible
+    if (checkoutModal && checkoutModal.style.display !== 'none') {
+        initCheckoutModalEvents();
+    }
+});
+
+// ============================================
+// FALLBACK FOR ESCAPE KEY
+// ============================================
+
+// Add this fallback escape key handler
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        // Check for admin panel
+        const adminPanel = document.getElementById('adminPanelModal');
+        if (adminPanel && adminPanel.style.display === 'flex') {
+            closeAdminPanel();
+            return;
+        }
+        
+        // Check for checkout modal
+        const checkoutModal = document.getElementById('checkoutModal');
+        if (checkoutModal && checkoutModal.style.display !== 'none') {
+            checkoutHideModal();
+            return;
+        }
+        
+        // Check for other modals
+        const modals = document.querySelectorAll('.modal-backdrop');
+        modals.forEach(modal => {
+            if (modal.style.display === 'flex' || modal.style.display === 'block') {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        });
+    }
+});
