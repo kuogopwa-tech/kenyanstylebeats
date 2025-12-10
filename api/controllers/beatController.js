@@ -202,7 +202,7 @@ exports.getBeats = async (req, res) => {
   try {
     const { 
       page = 1, 
-      limit = 12, 
+      limit = 5000000, 
       series, 
       fileType, 
       minPrice, 
@@ -264,18 +264,21 @@ exports.getBeats = async (req, res) => {
         break;
     }
 
-    const [beats, total, seriesList, genreList] = await Promise.all([
-      Beat.find(filter)
-        .populate('uploadedBy', 'name email avatar')
-        .select('-__v')
-        .sort(sortOption)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean(),
-      Beat.countDocuments(filter),
-      Beat.distinct('series', { isActive: true }),
-      Beat.distinct('genre', { isActive: true, genre: { $ne: null, $ne: '' } })
-    ]);
+    
+const queryLimit = limit === 'all' ? 0 : parseInt(limit); // 0 = no limit
+
+const [beats, total, seriesList, genreList] = await Promise.all([
+  Beat.find(filter)
+    .populate('uploadedBy', 'name email avatar')
+    .select('-__v')
+    .sort(sortOption)
+    .skip(skip)
+    .limit(queryLimit)
+    .lean(),
+  Beat.countDocuments(filter),
+  Beat.distinct('series', { isActive: true }),
+  Beat.distinct('genre', { isActive: true, genre: { $ne: null, $ne: '' } })
+]);
 
     // Add URLs
     const transformedBeats = beats.map(beat => ({

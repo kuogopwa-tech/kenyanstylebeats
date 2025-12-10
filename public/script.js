@@ -12,6 +12,12 @@ let allBeats = [];
 let currentSeries = 'all';
 let searchQuery = '';
 
+// Pagination variables
+let currentPage = 1;
+let totalPages = 1;
+let totalBeatsCount = 0;
+const BEATS_PER_PAGE = 24; // Adjust as needed
+
 // ============================================
 // INITIALIZATION
 // ============================================
@@ -136,6 +142,8 @@ function updateUIForLoggedInUser() {
         // Force refresh beats to update delete buttons
         setTimeout(() => {
             if (document.getElementById('beatsGrid')) {
+                console.log(allBeats);
+
                 displayBeats(allBeats);
             }
         }, 100);
@@ -326,17 +334,31 @@ function refreshBeatCards() {
 
 // Load beats from API
 // Load beats from API
-async function loadBeats() {
-    console.log('📡 Loading beats from API...');
-    console.log(`👤 Current user role before loading: ${currentUser?.role || 'Not logged in'}`);
+async function loadBeats(page = 1, series = currentSeries) {
+    console.log(`📡 Loading beats page ${page}...`);
     
     try {
         const beatsGrid = document.getElementById('beatsGrid');
-        if (beatsGrid) {
+        if (beatsGrid && page === 1) {
             beatsGrid.innerHTML = '<div style="color:white;padding:20px;text-align:center">Loading beats...</div>';
         }
         
-        const response = await fetch(`${API_BASE_URL}/beats`);
+        // Build query parameters
+        const params = new URLSearchParams({
+            page: page,
+            limit: BEATS_PER_PAGE,
+            sort: 'newest' // or whatever default you want
+        });
+        
+        if (series && series !== 'all') {
+            params.append('series', series);
+        }
+        
+        if (searchQuery) {
+            params.append('search', searchQuery);
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/beats?${params.toString()}`);
         console.log('API Response status:', response.status);
         
         if (!response.ok) {
@@ -346,33 +368,165 @@ async function loadBeats() {
         const data = await response.json();
         
         if (data.success) {
-            allBeats = data.beats;
-            console.log(`✅ Loaded ${allBeats.length} beats`);
-            console.log(`👤 User role during display: ${currentUser?.role || 'Not logged in'}`);
+            console.log(`✅ Loaded ${data.count} beats (Page ${page}/${data.totalPages})`);
+            console.log(`📊 Total beats available: ${data.total}`);
             
-            populateSeriesSidebar(data.series);
+            // Store pagination info
+            currentPage = data.currentPage;
+            totalPages = data.totalPages;
+            totalBeatsCount = data.total;
+            
+            if (page === 1) {
+                // First page - replace all beats
+                allBeats = data.beats;
+            } else {
+                // Subsequent pages - append beats
+                allBeats = [...allBeats, ...data.beats];
+            }
+            
+            // Populate series sidebar (only on first page)
+            if (page === 1) {
+                populateSeriesSidebar(data.series);
+                updateExploreDropdown(data.series);
+            }
+            
+            // Display beats
             displayBeats(allBeats);
-            updateExploreDropdown(data.series);
+            
+            // Update pagination controls
+            updatePaginationControls();
+            
         } else {
             console.error('API returned error:', data.message);
             showToast('Failed to load beats', 'error');
-            displayNoBeatsMessage();
+            if (page === 1) displayNoBeatsMessage();
         }
     } catch (error) {
         console.error('Error loading beats:', error);
-        
-        const beatsGrid = document.getElementById('beatsGrid');
-        if (beatsGrid) {
-            beatsGrid.innerHTML = `
-                <div style="color:#dc3545;padding:20px;text-align:center">
-                    <p>Error loading beats: ${error.message}</p>
-                    <p>Make sure the backend server is running at ${API_BASE_URL}</p>
-                </div>
-            `;
-        }
-        
         showToast('Network error loading beats', 'error');
     }
+}
+
+// Update pagination controls
+function updatePaginationControls() {
+    const paginationContainer = document.getElementById('paginationContainer');
+    if (!paginationContainer) return;
+    
+    if (totalPages <= 1) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    let html = `
+        <div class="pagination">
+            <button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" 
+                    onclick="changePage(${currentPage - 1})" 
+                    ${currentPage === 1 ? 'disabled' : ''}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Previous
+            </button>
+            
+            <div class="pagination-pages">`;
+    
+    // Show first page
+    if (currentPage > 3) {
+        html += `<button class="pagination-page ${1 === currentPage ? 'active' : ''}" onclick="changePage(1)">1</button>`;
+        if (currentPage > 4) html += `<span class="pagination-ellipsis">...</span>`;
+    }
+    
+    // Show pages around current page
+    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+        html += `<button class="pagination-page ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+    }
+    
+    // Show last page
+    if (currentPage < totalPages - 2) {
+        if (currentPage < totalPages - 3) html += `<span class="pagination-ellipsis">...</span>`;
+        html += `<button class="pagination-page ${totalPages === currentPage ? 'active' : ''}" onclick="changePage(${totalPages})">${totalPages}</button>`;
+    }
+    
+    html += `</div>
+            
+            <button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" 
+                    onclick="changePage(${currentPage + 1})" 
+                    ${currentPage === totalPages ? 'disabled' : ''}>
+                Next
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="pagination-info">
+            Showing <strong>${allBeats.length}</strong> of <strong>${totalBeatsCount}</strong> beats
+            (Page ${currentPage} of ${totalPages})
+        </div>
+    `;
+    
+    paginationContainer.innerHTML = html;
+}
+
+// Change page function
+function changePage(page) {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    
+    // Save scroll position
+    const scrollPos = window.scrollY;
+    
+    // Load new page
+    loadBeats(page);
+    
+    // Restore scroll position after a delay
+    setTimeout(() => {
+        window.scrollTo(0, scrollPos);
+    }, 100);
+}
+
+// Add load more functionality
+function addLoadMoreButton() {
+    const beatsGrid = document.getElementById('beatsGrid');
+    if (!beatsGrid) return;
+    
+    // Remove existing load more button
+    const existingLoadMore = document.getElementById('loadMoreBtn');
+    if (existingLoadMore) existingLoadMore.remove();
+    
+    // Add load more button if there are more pages
+    if (currentPage < totalPages) {
+        beatsGrid.insertAdjacentHTML('afterend', `
+            <div id="loadMoreContainer" style="text-align: center; padding: 30px 0; grid-column: 1 / -1;">
+                <button id="loadMoreBtn" class="btn" onclick="loadMoreBeats()">
+                    Load More Beats (${allBeats.length} of ${totalBeatsCount})
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 8px;">
+                        <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+                    </svg>
+                </button>
+            </div>
+        `);
+    }
+}
+
+// Load more beats function
+async function loadMoreBeats() {
+    const nextPage = currentPage + 1;
+    if (nextPage > totalPages) return;
+    
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.innerHTML = `
+            <span style="display:flex;align-items:center;gap:8px">
+                <svg class="loading-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+                Loading...
+            </span>
+        `;
+    }
+    
+    await loadBeats(nextPage);
 }
 // Populate series sidebar
 function populateSeriesSidebar(seriesList) {
@@ -456,28 +610,30 @@ function updateExploreDropdown(seriesList) {
 // Filter beats by series
 function filterBeatsBySeries(series) {
     currentSeries = series;
+    currentPage = 1; // Reset to first page when filtering
     
     // Update active state in sidebar
     document.querySelectorAll('.series-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.series === series);
     });
     
-    // Filter beats
-    let filteredBeats = allBeats;
-    if (series !== 'all') {
-        filteredBeats = allBeats.filter(beat => beat.series === series);
-    }
-    
-    // Apply search filter if any
-    if (searchQuery) {
-        filteredBeats = filteredBeats.filter(beat =>
-            beat.title.toLowerCase().includes(searchQuery) ||
-            beat.series.toLowerCase().includes(searchQuery) ||
-            (beat.genre && beat.genre.toLowerCase().includes(searchQuery))
-        );
-    }
-    
-    displayBeats(filteredBeats);
+    // Load beats with filter
+    loadBeats(1, series);
+}
+
+// Update search input handler
+const searchInput = document.getElementById('searchBeats');
+if (searchInput) {
+    let searchTimeout;
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchQuery = e.target.value.toLowerCase();
+        
+        searchTimeout = setTimeout(() => {
+            currentPage = 1; // Reset to first page when searching
+            loadBeats(1);
+        }, 300); // Debounce for 300ms
+    });
 }
 
 // Display beats in grid
@@ -1680,42 +1836,6 @@ function shareKeyViaWhatsApp(key, email, beatTitle) {
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
 }
 
-// Enhanced showKeyResult function
-function showKeyResult(element, message, type = 'info') {
-    if (!element) {
-        console.warn('showKeyResult: element is null');
-        return;
-    }
-    
-    const typeClass = type === 'success' ? 'success' : 
-                     type === 'error' ? 'error' : 'info';
-    
-    element.innerHTML = `
-        <div class="key-result ${typeClass}" style="padding:15px;border-radius:8px;margin:10px 0;">
-            ${message}
-        </div>
-    `;
-    
-    // Auto-clear after 10 seconds for success messages
-    if (type === 'success') {
-        setTimeout(() => {
-            if (element && element.innerHTML.includes('key-result')) {
-                element.innerHTML = '';
-            }
-        }, 10000);
-    }
-}
-
-// Show key result
-function showKeyResult(element, message, type = 'info') {
-    if (!element) return;
-    
-    element.innerHTML = `
-        <div class="key-result ${type}">
-            ${message}
-        </div>
-    `;
-}
 
 // Copy key to clipboard
 function copyKeyToClipboard(key) {
@@ -2190,19 +2310,31 @@ function adminLogout() {
     }
 }
 
+let isUploading = false;
+let lastUploadTime = 0;
+const MIN_UPLOAD_INTERVAL = 5000; // 5 seconds minimum between uploads
+
+// ============================================
+// UPLOAD BEAT FUNCTION (UPDATED)
+// ============================================
+
 async function uploadBeat() {
+    // Check if user is admin
     if (!currentUser || currentUser.role !== 'admin') {
         showToast('Admin access required', 'error');
         return;
     }
     
+    // Get form elements
     const fileType = document.getElementById('fileType').value;
     const beatSeries = document.getElementById('beatSeries').value;
     const beatPrice = document.getElementById('beatPrice').value;
     const beatGenre = document.getElementById('beatGenre')?.value.trim();
     const beatFile = document.getElementById('beatFile').files[0];
     const status = document.getElementById('uploadStatus');
+    const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
     
+    // Validate required fields
     if (!fileType || !beatSeries || !beatPrice || !beatFile) {
         showStatus(status, 'Please fill in all required fields', 'error');
         return;
@@ -2213,20 +2345,53 @@ async function uploadBeat() {
         return;
     }
     
-    const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+    // 1. PREVENTION: Check if already uploading
+    if (isUploading) {
+        showStatus(status, 'Upload in progress. Please wait...', 'info');
+        showToast('Already uploading. Please wait.', 'warning');
+        return;
+    }
+    
+    // 2. PREVENTION: Check upload cooldown
+    const now = Date.now();
+    const timeSinceLastUpload = now - lastUploadTime;
+    
+    if (timeSinceLastUpload < MIN_UPLOAD_INTERVAL) {
+        const secondsLeft = Math.ceil((MIN_UPLOAD_INTERVAL - timeSinceLastUpload) / 1000);
+        showStatus(status, `Please wait ${secondsLeft} second${secondsLeft !== 1 ? 's' : ''} before uploading again`, 'warning');
+        return;
+    }
+    
+    // 3. PREVENTION: Check for duplicate file
+    if (beatFile) {
+        const isDuplicate = await checkDuplicateFile(beatFile, status);
+        if (isDuplicate) {
+            showStatus(status, 'This file appears to already exist in the system', 'warning');
+            return;
+        }
+    }
+    
+    // 4. PREVENTION: Disable form and set uploading state
+    isUploading = true;
+    lastUploadTime = now;
+    setUploadFormEnabled(false);
+    
+    // Save original button state
     const originalText = submitBtn.innerHTML;
     
+    // Update button to show loading state
     submitBtn.innerHTML = `
         <span style="display:flex;align-items:center;gap:8px">
             <svg class="loading-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 12a9 9 0 11-6.219-8.56" />
             </svg>
-            Uploading...
+            Uploading... Please don't refresh
         </span>
     `;
     submitBtn.disabled = true;
     
     try {
+        // Create form data
         const formData = new FormData();
         formData.append('fileType', fileType);
         formData.append('series', beatSeries);
@@ -2237,6 +2402,10 @@ async function uploadBeat() {
             formData.append('genre', beatGenre);
         }
         
+        // Add timestamp for server-side duplicate prevention
+        formData.append('uploadTimestamp', now.toString());
+        
+        // Make API request
         const response = await fetch(`${API_BASE_URL}/beats/upload`, {
             method: 'POST',
             headers: {
@@ -2245,17 +2414,18 @@ async function uploadBeat() {
             body: formData
         });
         
+        // Handle response
         const data = await response.json();
         
         if (response.ok && data.success) {
-            showStatus(status, 'Beat uploaded successfully!', 'success');
+            // SUCCESS: Show success message
+            showStatus(status, '✅ Beat uploaded successfully!', 'success');
             showToast('Beat uploaded successfully!', 'success');
             
+            // Reset form
             resetUploadForm();
             
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            
+            // Close modal after delay
             setTimeout(() => {
                 hideModal('adminModal');
                 setTimeout(() => {
@@ -2267,28 +2437,118 @@ async function uploadBeat() {
             }, 1500);
             
         } else {
+            // ERROR: Show error message
             const errorMessage = data.message || `Upload failed with status: ${response.status}`;
-            showStatus(status, errorMessage, 'error');
+            showStatus(status, `❌ ${errorMessage}`, 'error');
+            showToast(errorMessage, 'error');
             
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
+            // Allow retry after error
+            lastUploadTime = 0;
         }
         
     } catch (error) {
+        // NETWORK ERROR
         console.error('Upload error:', error);
-        showStatus(status, 'Network error. Please check your connection and try again.', 'error');
+        showStatus(status, '❌ Network error. Please check your connection and try again.', 'error');
+        showToast('Network error. Please try again.', 'error');
         
+        // Allow retry after network error
+        lastUploadTime = 0;
+        
+    } finally {
+        // 5. PREVENTION: Always reset states in finally block
+        isUploading = false;
+        setUploadFormEnabled(true);
+        
+        // Restore button state
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     }
 }
 
+// ============================================
+// HELPER FUNCTIONS FOR DUPLICATE PREVENTION
+// ============================================
+
+/**
+ * Check if file might be a duplicate
+ */
+async function checkDuplicateFile(file, statusElement) {
+    try {
+        // Quick check: Compare with existing beats by filename and size
+        const fileName = file.name;
+        const fileSize = file.size;
+        
+        const duplicateByName = allBeats.some(beat => 
+            beat.fileName === fileName || 
+            (beat.originalName && beat.originalName === fileName)
+        );
+        
+        if (duplicateByName) {
+            console.warn('Duplicate detected by filename:', fileName);
+            return true;
+        }
+        
+        // For better accuracy, you could compute file hash
+        // Note: This is client-side only, server should also validate
+        
+        return false;
+        
+    } catch (error) {
+        console.error('Error checking for duplicate:', error);
+        // If check fails, don't block upload - let server handle it
+        return false;
+    }
+}
+
+/**
+ * Enable/disable the entire upload form
+ */
+function setUploadFormEnabled(enabled) {
+    const form = document.getElementById('uploadForm');
+    if (!form) return;
+    
+    const inputs = form.querySelectorAll('input, select, button, textarea');
+    
+    inputs.forEach(input => {
+        // Don't re-enable the submit button here - it's handled separately
+        if (input.type !== 'submit') {
+            input.disabled = !enabled;
+        }
+        
+        // Visual feedback
+        if (!enabled) {
+            input.style.opacity = '0.7';
+            input.style.cursor = 'not-allowed';
+        } else {
+            input.style.opacity = '1';
+            input.style.cursor = '';
+        }
+    });
+    
+    // Handle file upload area separately
+    const fileUploadWrapper = document.querySelector('.file-upload-wrapper');
+    if (fileUploadWrapper) {
+        if (!enabled) {
+            fileUploadWrapper.style.opacity = '0.7';
+            fileUploadWrapper.style.pointerEvents = 'none';
+        } else {
+            fileUploadWrapper.style.opacity = '1';
+            fileUploadWrapper.style.pointerEvents = 'auto';
+        }
+    }
+}
+
+/**
+ * Enhanced form reset that also resets upload state
+ */
 function resetUploadForm() {
     const form = document.getElementById('uploadForm');
     if (form) {
         form.reset();
     }
     
+    // Reset specific elements
     const fileTypeSelect = document.getElementById('fileType');
     const beatSeriesSelect = document.getElementById('beatSeries');
     
@@ -2298,17 +2558,20 @@ function resetUploadForm() {
     const beatGenre = document.getElementById('beatGenre');
     if (beatGenre) beatGenre.value = '';
     
+    // Reset file preview
     const filePreview = document.getElementById('filePreview');
     if (filePreview) {
         filePreview.classList.remove('has-file');
         filePreview.innerHTML = '';
     }
     
+    // Reset file input
     const fileInput = document.getElementById('beatFile');
     if (fileInput) {
         fileInput.value = '';
     }
     
+    // Reset visual states
     document.querySelectorAll('.form-control').forEach(input => {
         input.classList.remove('is-valid', 'is-invalid');
     });
@@ -2316,6 +2579,137 @@ function resetUploadForm() {
     const uploadWrapper = document.querySelector('.file-upload-wrapper');
     if (uploadWrapper) {
         uploadWrapper.classList.remove('dragover');
+    }
+    
+    // Also reset upload status message after a delay
+    setTimeout(() => {
+        const status = document.getElementById('uploadStatus');
+        if (status) {
+            status.textContent = '';
+            status.className = 'status-message';
+        }
+    }, 3000);
+}
+
+/**
+ * Reset upload form button state (called when modal opens)
+ */
+function resetUploadFormButton() {
+    const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+    if (submitBtn) {
+        // Store original text if not already stored
+        if (!submitBtn.hasAttribute('data-original-text')) {
+            submitBtn.setAttribute('data-original-text', submitBtn.innerHTML);
+        }
+        
+        // Restore original text
+        const originalText = submitBtn.getAttribute('data-original-text') || 'Upload Beat';
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        
+        // Remove loading spinner if present
+        const spinner = submitBtn.querySelector('.loading-spinner');
+        if (spinner) {
+            spinner.remove();
+        }
+        
+        // Reset visual state
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+    }
+    
+    // Also reset the upload state
+    isUploading = false;
+    setUploadFormEnabled(true);
+}
+
+// ============================================
+// ENHANCED EVENT LISTENER SETUP
+// ============================================
+
+/**
+ * Enhanced event listener setup for upload form
+ */
+function setupUploadEventListeners() {
+    const uploadForm = document.getElementById('uploadForm');
+    if (uploadForm) {
+        // Remove any existing listeners to prevent duplicates
+        const newForm = uploadForm.cloneNode(true);
+        uploadForm.parentNode.replaceChild(newForm, uploadForm);
+        
+        // Add single submit listener
+        newForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📤 Upload form submitted');
+            uploadBeat();
+        });
+        
+        // Also prevent double-click on submit button
+        const submitBtn = newForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // Let the form submit handler handle it
+            });
+        }
+    }
+    
+    // Reset form button
+    const resetFormBtn = document.getElementById('resetFormBtn');
+    if (resetFormBtn) {
+        resetFormBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            resetUploadForm();
+            showToast('Form reset successfully', 'info');
+        });
+    }
+    
+    // Admin logout button
+    const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+    if (adminLogoutBtn) {
+        adminLogoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            resetUploadForm();
+            adminLogout();
+        });
+    }
+}
+
+// ============================================
+// UPLOAD STATUS DISPLAY FUNCTIONS
+// ============================================
+
+/**
+ * Enhanced status display with auto-clear
+ */
+function showStatus(element, message, type = 'info') {
+    if (!element) return;
+    
+    element.textContent = message;
+    element.className = `status-message ${type}`;
+    element.style.display = 'block';
+    
+    // Auto-clear success messages after 5 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            if (element.textContent === message) {
+                element.textContent = '';
+                element.className = 'status-message';
+                element.style.display = 'none';
+            }
+        }, 5000);
+    }
+    
+    // Auto-clear info messages after 3 seconds
+    if (type === 'info') {
+        setTimeout(() => {
+            if (element.textContent === message) {
+                element.textContent = '';
+                element.className = 'status-message';
+                element.style.display = 'none';
+            }
+        }, 3000);
     }
 }
 
@@ -3852,36 +4246,22 @@ function copyKey(key) {
 // ============================================
 
 // Add to your existing DOMContentLoaded event listener
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('🔄 EMPIRE BEATSTORE - Initializing...');
     
-    // Initialize admin panel button
-    initAdminPanelButton();
-    
-    // Check auth status (this will update button visibility)
-    checkAuthStatus();
-    setupEventListeners();
-    setCurrentYear();
-    
-    // Set current year in footer
-    document.getElementById('year').textContent = new Date().getFullYear();
+    try {
+        await checkAuthStatus(); // Wait for auth first
+        setupEventListeners();
+        setCurrentYear();
+        await loadBeats(); // Then load beats
+        initAdminPanelButton();
+        setupAdminPanelListeners();
+    } catch (error) {
+        console.error('Initialization error:', error);
+    }
 });
 
 
-// ============================================
-// ADMIN PANEL TAB MANAGEMENT - FIXED
-// ============================================
-
-// Initialize admin panel on DOM ready
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔄 EMPIRE BEATSTORE - Initializing Admin Panel...');
-    
-    // Initialize admin panel button
-    initAdminPanelButton();
-    
-    // Setup admin panel event listeners
-    setupAdminPanelListeners();
-});
 
 // Initialize admin panel button
 function initAdminPanelButton() {
