@@ -60,7 +60,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB
+    fileSize: 200 * 1024 * 1024, // Changed from 50MB to 200MB
     files: 1
   }
 });
@@ -210,8 +210,8 @@ const downloadFromGridFS = async (fileId, res) => {
       // Handle stream events
       downloadStream.on('end', () => {
         console.log('Download completed:', fileId);
-        resolve();
-      });
+        resolve()});
+      
       
       downloadStream.on('error', (error) => {
         console.error('Download stream error:', error);
@@ -330,13 +330,13 @@ const deleteFromGridFS = async (fileId) => {
   }
 };
 
-// Error handler
+// Error handler - Updated error message for 200MB limit
 const handleUploadError = (err, req, res, next) => {
   console.error('Upload error:', err);
   
   if (err instanceof multer.MulterError) {
     const errors = {
-      LIMIT_FILE_SIZE: 'File size too large. Maximum size is 50MB',
+      LIMIT_FILE_SIZE: 'File size too large. Maximum size is 200MB', // Updated message
       LIMIT_UNEXPECTED_FILE: 'Unexpected file field',
       LIMIT_FIELD_KEY: 'Field name too long',
       LIMIT_FIELD_VALUE: 'Field value too long',
