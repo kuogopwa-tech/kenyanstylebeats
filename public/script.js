@@ -541,26 +541,30 @@ function populateSeriesSidebar(seriesList) {
         return;
     }
     
-    // Create "All" option
+    // Create "All" option - REPLACED 🎵 with SVG
     let html = `
         <li>
             <button class="series-btn ${currentSeries === 'all' ? 'active' : ''}" 
                     data-series="all">
-                <span class="series-icon">🎵</span>
+                <span class="series-icon">
+                    <img src="icons/music.svg" alt="All beats" class="series-svg-icon">
+                </span>
                 All Beats
                 <span class="series-count">${allBeats.length}</span>
             </button>
         </li>
     `;
     
-    // Add each series
+    // Add each series - REPLACED 🎹 with SVG
     seriesList.forEach(series => {
         const count = allBeats.filter(beat => beat.series === series).length;
         html += `
             <li>
                 <button class="series-btn ${currentSeries === series ? 'active' : ''}" 
                         data-series="${series}">
-                    <span class="series-icon">🎹</span>
+                    <span class="series-icon">
+                        <img src="icons/piano.png" alt="${series}" class="series-svg-icon">
+                    </span>
                     ${series}
                     <span class="series-count">${count}</span>
                 </button>
@@ -665,138 +669,123 @@ function displayBeats(beats) {
 // Create beat card HTML
 // Create beat card HTML
 function createBeatCard(beat) {
-    console.log(`🎨 Creating card for beat: ${beat.title}`);
-    
-    // Check admin status
-    const isAdmin = currentUser && currentUser.role === 'admin';
-    
-    console.log(`   User: ${currentUser?.email || 'Not logged in'}`);
-    console.log(`   Role: ${currentUser?.role || 'No role'}`);
-    console.log(`   Is Admin: ${isAdmin}`);
-    
-    const formattedPrice = new Intl.NumberFormat('en-KE', {
-        style: 'currency',
-        currency: 'KES'
-    }).format(beat.price);
-    
-    // Build delete button HTML conditionally
-    const deleteButtonHtml = isAdmin ? `
-        <button class="btn secondary delete-btn" data-action="delete" data-beat-id="${beat.id}">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-            Delete
-        </button>
-    ` : '';
-    
-    return `
-        <div class="beat-card" data-beat-id="${beat.id}">
-            <div class="beat-thumb">
-                <div style="flex:1">
-                    <div class="beat-type-badge">
-                        ${beat.fileType === 'Audio' ? '🎵 Audio' : '🎹 Style'}
-                    </div>
-                </div>
-                <div class="bpm-badge">
-                    ${beat.genre || 'No Genre'}
-                </div>
-            </div>
-            
-            <div style="display:flex;flex-direction:column;gap:12px">
-                <div class="beat-meta">
-                    <div class="beat-name">${beat.title}</div>
-                    <div class="price">${formattedPrice}</div>
-                </div>
-                
-                <div class="beat-info">
-                    <span class="beat-series">${beat.series}</span>
-                    <span class="beat-uploader">By: ${beat.uploadedBy?.name || 'Unknown'}</span>
-                </div>
-                
-                <div class="beat-stats">
-                    <span class="stat-item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                        ${beat.plays || 0} plays
-                    </span>
-                    <span class="stat-item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        ${beat.downloads || 0} downloads
-                    </span>
-                </div>
-                
-                <div class="beat-actions">
-                    ${beat.fileType === 'Audio' ? `
-                        <button class="play-btn" data-action="play" data-audio="${beat.fileUrl}">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                            </svg>
-                            Play
-                        </button>
-                    ` : ''}
-                    
-                    <button class="btn secondary" data-action="preview" data-beat-id="${beat.id}">
-                        Preview Details
-                    </button>
-                    
-                    <button class="btn" data-action="buy" data-beat-id="${beat.id}">
-                        Buy Now
-                    </button>
-                    
-                    ${deleteButtonHtml}
-                </div>
-            </div>
+  const isAdmin = currentUser && currentUser.role === 'admin';
+
+  const formattedPrice = new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: 'KES'
+  }).format(beat.price);
+
+  return `
+    <div class="beat-card compact" data-beat-id="${beat.id}">
+
+      <!-- LEFT: type with text -->
+      <div class="beat-type">
+        <div class="beat-thumb">
+          <img 
+            src="icons/${beat.fileType === 'Audio' ? 'audio.png' : 'piano.png'}"
+            alt="${beat.fileType}"
+          />
         </div>
-    `;
+        <span class="file-type-text">${beat.fileType}</span>
+      </div>
+
+      <!-- CENTER: info -->
+      <div class="beat-main">
+        <div class="beat-title">
+          <span class="title-text">${beat.title}</span>
+          <span class="price">${formattedPrice}</span>
+        </div>
+
+        <div class="beat-sub">
+          ${beat.genre || 'No Genre'} • ${beat.series} • 
+          ${beat.plays || 0}
+          <img src="icons/play.svg" class="inline-icon" alt="plays" /> •
+          ${beat.downloads || 0}
+          <img src="icons/download.svg" class="inline-icon" alt="downloads" />
+        </div>
+      </div>
+
+      <!-- RIGHT: actions -->
+      <div class="beat-actions">
+        ${beat.fileType === 'Audio' ? `
+          <button data-action="play" data-audio="${beat.fileUrl}" title="Play">
+            <img src="icons/play.svg" alt="Play">
+          </button>
+        ` : ''}
+
+        <button data-action="preview" data-beat-id="${beat.id}" title="Details">
+          <img src="icons/info.svg" alt="Details">
+        </button>
+
+        <button data-action="buy" data-beat-id="${beat.id}" title="Buy">
+          <img src="icons/cart.svg" alt="Buy">
+        </button>
+
+        ${isAdmin ? `
+          <button data-action="delete" data-beat-id="${beat.id}" title="Delete">
+            <img src="icons/delete.svg" alt="Delete">
+          </button>
+        ` : ''}
+      </div>
+
+    </div>
+  `;
 }
+
+
 
 // Add event listeners to beat cards
 function addBeatCardEventListeners() {
-    // Play button for audio beats
-    document.querySelectorAll('.play-btn[data-audio]').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const audioUrl = this.dataset.audio;
-            playAudioPreview(audioUrl, this);
-        });
+  // Play button
+  document.querySelectorAll('.beat-actions button[data-action="play"]').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const audioUrl = this.dataset.audio;
+      playAudioPreview(audioUrl, this);
     });
-    
-    // Preview button
-    document.querySelectorAll('.btn[data-action="preview"]').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const beatId = this.dataset.beatId;
-            showBeatDetails(beatId);
-        });
+  });
+  
+  // Preview button
+  document.querySelectorAll('.beat-actions button[data-action="preview"]').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const beatId = this.dataset.beatId;
+      showBeatDetails(beatId);
     });
-    
-    // Buy button
-    document.querySelectorAll('.btn[data-action="buy"]').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const beatId = this.dataset.beatId;
-            showCheckoutModal(beatId);
-        });
+  });
+  
+  // Buy button
+  document.querySelectorAll('.beat-actions button[data-action="buy"]').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const beatId = this.dataset.beatId;
+      showCheckoutModal(beatId);
     });
-    
-    // Delete button (admin only)
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', async function(e) {
-            e.stopPropagation();
-            const beatId = this.dataset.beatId;
-            const confirmed = confirm('Are you sure you want to delete this beat?');
-            if (confirmed) {
-                await deleteBeat(beatId);
-            }
-        });
+  });
+  
+  // Delete button
+  document.querySelectorAll('.beat-actions button[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', async function(e) {
+      e.stopPropagation();
+      const beatId = this.dataset.beatId;
+      const confirmed = confirm('Are you sure you want to delete this beat?');
+      if (confirmed) {
+        await deleteBeat(beatId);
+      }
     });
+  });
+  
+  // Click on card (optional - opens preview)
+  document.querySelectorAll('.beat-card.compact').forEach(card => {
+    card.addEventListener('click', function(e) {
+      // Only trigger if not clicking on a button
+      if (!e.target.closest('button')) {
+        const beatId = this.dataset.beatId;
+        showBeatDetails(beatId);
+      }
+    });
+  });
 }
 
 // Display no beats message
